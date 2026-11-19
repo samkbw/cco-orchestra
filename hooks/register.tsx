@@ -5,7 +5,7 @@ import type { OrchestraView, StepRow } from '../types'
 import { STEP_TIMEOUT_MS, core, installNode } from './core'
 import type { CoreResult } from './core'
 import { renderPane } from './view'
-import { isDispatch, renderDispatchRow, renderWorkerBoard, startWorkerBoard } from './workers'
+import { isDispatch, renderDispatchRow, renderWorkerBoard, renderWorkerSection, rewriteSpinner, startWorkerBoard } from './workers'
 
 const PANE = 'orchestra'
 const TITLE = '🎼 오케스트라'
@@ -261,7 +261,9 @@ export const register: Register = on => {
     return { text: '오케스트라 패널을 열었습니다.' }
   })
 
-  on('ui.render', { component: 'Pane', requestId: PANE }, async ($, e) => renderPane($, e, await read($, view), press($)))
+  on('ui.render', { component: 'Pane', requestId: PANE }, async ($, e) => renderPane($, e, await read($, view), press($), await renderWorkerSection($, e)))
+  // 진행 중 문구 줄에 "· 워커 N개 진행 중"
+  on('ui.render', { component: 'Spinner' }, async ($, e, next) => rewriteSpinner($, e, next))
 
   // 워커 현황: 입력창 위 띠
   on('ui.render', { component: 'AbovePrompt' }, async ($, e, next) => renderWorkerBoard($, e as never, () => next(e)))

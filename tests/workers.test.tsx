@@ -57,3 +57,39 @@ test('VS Code 채팅창: 워커에게 맡긴 줄 아래에 그 줄의 일이 보
   expect(await waitFor(ui, /로그인 화면 수정.*claude · opus.*진행 중/)).toBeDefined()
   expect(await ui.find({ text: /테스트 작성/ })).toBeUndefined()
 })
+
+function base(on: any) {
+  on('command.register', () => ({ value: { command: 'orch' } as never }))
+  on('ui.open', () => ({ value: { isPlaced: true } }))
+  on('ui.log', () => ({ value: undefined }))
+  on('ui.toast', () => ({ value: undefined }))
+  on('session.root', () => ({ value: 'C:/p' }))
+  on('session.start', (_$: unknown, e: any) => ({ cwd: e.cwd }))
+  on('fs.stat', () => ({ value: { size: LINES.length, isFile: true } as never }))
+  on('fs.read', () => ({ value: LINES as never }))
+}
+
+test('진행 중 문구 줄에 워커 개수가 붙는다', async ($, on) => {
+  base(on)
+  on('process.run', () => ({ deny: 'not in test' }))
+  let seen = ''
+  on('ui.render', { component: 'Spinner' }, (h$: any, e: any) => {
+    seen = String(e.props.suffix)
+    const { Text } = h$.ui.resolve(e)
+    return <Text>spinner</Text>
+  })
+  await $.session.start({ cwd: 'C:/p', surface: 'terminal', isInteractive: true } as never)
+  await new Promise(resolve => setTimeout(resolve, 300))
+  await $.ui.mount({ plugin: 'orchestra', component: 'Spinner', surface: 'terminal', props: { word: 'Thinking', message: null, suffix: '…', mode: 'thinking' } } as never).catch(() => undefined)
+  expect(seen).toContain('워커 2개 진행 중')
+})
+
+test('오케스트라 패널 상태 화면에 워커 현황 칸이 보인다', async ($, on) => {
+  base(on)
+  on('process.run', () => ({ value: { exitCode: 0, stdout: JSON.stringify({ ok: true, check: { state: { mode: 'global', record: { scope: 'global' } } }, rows: [], notices: [], actions: [], steps: [] }), stderr: '' } as never }))
+  await $.session.start({ cwd: 'C:/p', surface: 'vscode', isInteractive: true } as never)
+  const ui = await $.ui.mount({ plugin: 'orchestra', component: 'Pane', requestId: 'orchestra', surface: 'vscode', props: { title: '🎼 오케스트라', isFocused: false, bodyColumns: 100, placement: 'dock', scroll: { offset: 0, bodyRows: 60 }, view: {} } } as never)
+  await $.command.run({ command: 'orch', args: '' } as never).catch(() => undefined)
+  expect(await waitFor(ui, /워커 현황/)).toBeDefined()
+  expect(await waitFor(ui, /로그인 화면 수정.*진행 중/)).toBeDefined()
+})

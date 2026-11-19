@@ -44,7 +44,8 @@ const TITLES: Partial<Record<OrchestraView['stage'], string>> = {
   status: '🎼 오케스트라 상태',
 }
 
-export function renderPane($: EngineInterface, e: any, v: OrchestraView, press: (action: string) => () => Promise<void>) {
+// workers: 상태·완료 화면 아래에 붙이는 "워커 현황" 칸 (설치 중에는 보이지 않음)
+export function renderPane($: EngineInterface, e: any, v: OrchestraView, press: (action: string) => () => Promise<void>, workers?: unknown) {
   const { Box, Button, Text } = $.ui.resolve(e)
   return (
     <Box flexDirection="column">
@@ -87,6 +88,7 @@ export function renderPane($: EngineInterface, e: any, v: OrchestraView, press: 
       {!v.isBusy && v.actions.map(action => (
         <Button key={action} onPress={press(action)}>[ {ACTION_LABELS[action] ?? action} ]</Button>
       ))}
+      {(v.stage === 'status' || v.stage === 'done') && workers}
     </Box>
   )
 }
