@@ -175,9 +175,11 @@ async function offerRestart(rl) {
     return
   }
   const result = await withSpinner('VS Code를 다시 시작하는 중', () => restartVsCode())
-  console.log(result === 'restarted'
-    ? '✔ VS Code를 다시 열었습니다. Claude를 열면 오케스트라가 연결되어 있습니다.'
-    : '⚠ VS Code가 닫히지 않았습니다 (저장 여부를 묻는 창이 떠 있을 수 있음). VS Code를 직접 껐다 켜 주세요.')
+  console.log({
+    restarted: '✔ VS Code를 다시 열었습니다. Claude를 열면 오케스트라가 연결되어 있습니다.',
+    closeTimeout: '⚠ VS Code가 닫히지 않았습니다 (저장 여부를 묻는 창이 떠 있을 수 있음). VS Code를 직접 껐다 켜 주세요.',
+    openFailed: '⚠ VS Code를 닫았지만 다시 열지 못했습니다. VS Code를 직접 열어 주세요. 열면 오케스트라가 연결되어 있습니다.',
+  }[result])
 }
 
 
