@@ -2,7 +2,7 @@
 // 오케스트라 터미널 명령. Claude 패널도 이 명령을 --json으로 불러 같은 동작을 한다.
 import readline from 'node:readline/promises'
 
-import { apply, assertScope, cleanExt, keepExt, mergeDone, sync } from '../lib/apply.mjs'
+import { apply, assertScope, cleanExt, keepExt, mergeDone, sync, tune } from '../lib/apply.mjs'
 import { check } from '../lib/check.mjs'
 import { DEPENDS_ON, freshPlan, plan, runStep } from '../lib/install.mjs'
 import { registerPlugin } from '../lib/plugin.mjs'
@@ -147,6 +147,7 @@ async function install(opts) {
     console.log(opts.noPlugin
       ? '⚠ 연결은 오케스트라 플러그인이 합니다. Claude 입력창에서 /plugin install orchestra --marketplace samkbw/cco-orchestra 로 설치해 주세요.'
       : '⚠ 열려 있는 Claude에는 /reload-plugins 를 입력하면 연결됩니다 (새로 연 Claude는 바로 연결).')
+    console.log('\n👉 마지막 단계: Claude를 열면 "규칙 맞추기" 화면이 뜹니다. [지금 규칙 맞추기]를 눌러 내 방식에 맞게 규칙을 정해 주세요.')
     return 0
   } finally {
     rl?.close()
@@ -193,6 +194,8 @@ async function main() {
       const r = await sync(cwd)
       return out(r, r.isMerged ? `기본 규칙을 ${r.version}으로 갱신했습니다.` : `고친 규칙이 있어 새 기본 규칙을 따로 저장했습니다: ${r.saved}`)
     }
+    case 'tune':
+      return out(tune(arg), arg === 'start' ? '규칙 맞추기를 시작으로 기록했습니다.' : '다음에 다시 묻습니다.')
     case 'merge-done':
       return out({ changed: mergeDone(cwd) }, '기록했습니다.')
     case 'clean-ext':

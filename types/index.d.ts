@@ -1,5 +1,5 @@
 // 패널이 보여 주는 단계 (설치 화면 순서: missing → plan → installing → choose → done)
-export type Stage = 'loading' | 'missing' | 'plan' | 'installing' | 'choose' | 'done' | 'status' | 'error'
+export type Stage = 'loading' | 'missing' | 'plan' | 'installing' | 'choose' | 'done' | 'status' | 'tune' | 'error'
 
 export type CheckRow = {
   label: string
@@ -46,6 +46,7 @@ declare module 'claude-code' {
     orchestra: {
       view: OrchestraView
       workers: WorkerRow[]
+      tuneTarget: string
     }
   }
 }

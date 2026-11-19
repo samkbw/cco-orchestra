@@ -5,6 +5,7 @@ import type { OrchestraView, StepRow } from '../types'
 import { STEP_TIMEOUT_MS, core, installNode } from './core'
 import type { CoreResult } from './core'
 import { renderPane } from './view'
+import { TUNE_TEXT, tunePrompt } from './tune'
 import { isDispatch, renderDispatchRow, renderWorkerBoard, renderWorkerSection, rewriteSpinner, startWorkerBoard } from './workers'
 
 const PANE = 'orchestra'
@@ -16,6 +17,8 @@ const END_MARK = '<!-- orchestra:rules:end -->'
 
 const EMPTY: OrchestraView = { stage: 'loading', rows: [], steps: [], notices: [], actions: [], message: [], isBusy: false }
 const view = atom({ plugin: 'orchestra', key: 'view' } as const, EMPTY, { shape: 'view-2' })
+// 규칙 맞추기 대상 파일 (보여 준 규칙 위치)
+const tuneTarget = atom({ plugin: 'orchestra', key: 'tuneTarget' } as const, '', { shape: 'tune-1' })
 const CHOOSE: Partial<OrchestraView> = { stage: 'choose', rows: [], notices: [], message: [], actions: ['chooseGlobal', 'chooseProject'] }
 
 const DONE = [
@@ -72,6 +75,8 @@ async function boot($: EngineInterface, isQuiet: boolean) {
     if (r.check.state.mode === 'project') return isQuiet ? update($, view, now => ({ ...now, isBusy: false })) : showStatus($, r)
     return startWizard($, r)
   }
+  // 규칙 맞추기를 아직 안 했으면 (한 번 미룬 것 포함) 먼저 묻는다.
+  if (isTuneWaiting(r)) return showTune($, rec.target, [])
   if (r.notices.length > 0) {
     await showStatus($, r)
     $.ui.toast(`오케스트라: ${r.notices[0]}`)
@@ -140,19 +145,41 @@ async function apply($: EngineInterface, scope: 'global' | 'project') {
   const linked = await $.mcp.connect('cco-dispatch').catch(err => ({ isConnected: false, message: String(err) }))
   $.ui.log(`orchestra: 연결 ${linked.isConnected ? '됨' : `안 됨 (${(linked as { message?: string }).message ?? ''})`}`, { to: 'debug' })
   const status = await run($, ['status'])
-  await show($, {
-    stage: 'done',
-    rows: [],
-    notices: status.ok ? status.notices : [],
-    message: [
-      ...DONE,
-      `규칙 위치: ${r.target}`,
-      ...(r.cleaned as string[]).map(line => `정리함: ${line}`),
-      ...(r.notes as string[]).map(line => `⚠ ${line}`),
-      linked.isConnected ? '✔ 연결했습니다. 바로 쓸 수 있습니다.' : '⚠ 지금 바로 연결하지 못했습니다. Claude를 다시 시작하면 연결됩니다.',
-    ],
-    actions: status.ok ? status.actions : [],
-  })
+  const result = [
+    ...DONE,
+    `규칙 위치: ${r.target}`,
+    ...(r.cleaned as string[]).map(line => `정리함: ${line}`),
+    ...(r.notes as string[]).map(line => `⚠ ${line}`),
+    linked.isConnected ? '✔ 연결했습니다. 바로 쓸 수 있습니다.' : '⚠ 지금 바로 연결하지 못했습니다. Claude를 다시 시작하면 연결됩니다.',
+  ]
+  // 마지막 단계: 규칙 맞추기 (이미 끝낸 사람은 바로 완료)
+  if (status.ok && isTuneWaiting(status)) return showTune($, r.target, result)
+  await show($, { stage: 'done', rows: [], notices: status.ok ? status.notices : [], message: result, actions: status.ok ? status.actions : [] })
+}
+
+const isTuneWaiting = (r: CoreResult) => r.check?.state?.record && (r.check.state.tune === 'pending' || r.check.state.tune === 'later')
+
+async function showTune($: EngineInterface, target: string, before: string[]) {
+  await update($, tuneTarget, () => target)
+  await show($, { stage: 'tune', rows: [], notices: [], message: [...before, ...(before.length ? ['', '────────'] : []), ...TUNE_TEXT], actions: ['tuneStart', 'tuneLater'] })
+}
+
+// 버튼: 기록 → Claude에게 질문 시작을 맡긴다.
+async function tuneStart($: EngineInterface) {
+  const r = await run($, ['tune', 'start'])
+  if (!r.ok) return showError($, r)
+  const target = await read($, tuneTarget)
+  await show($, { stage: 'done', rows: [], notices: [], message: ['Claude가 대화창에서 질문을 시작합니다. 답해 주시면 규칙을 고쳐 줍니다.', '', '앞으로도 "오케스트라 규칙에서 ○○ 바꿔줘"라고 말하면 언제든 고칠 수 있습니다.'], actions: [] })
+  void $.prompt.submit({ text: tunePrompt(target) }).catch(err => $.ui.log(`orchestra: 규칙 맞추기 요청 실패: ${String(err)}`, { to: 'debug' }))
+}
+
+async function tuneLater($: EngineInterface) {
+  const r = await run($, ['tune', 'later'])
+  if (!r.ok) return showError($, r)
+  const message = r.tune === 'later'
+    ? ['다음에 Claude를 열 때 한 번 더 물어봅니다.', '언제든 /orch 에서 [지금 규칙 맞추기]를 누르거나, "오케스트라 규칙 맞추자"라고 말하면 됩니다.']
+    : ['더는 묻지 않습니다. 언제든 /orch 에서 [지금 규칙 맞추기]를 누르거나, "오케스트라 규칙 맞추자"라고 말하면 됩니다.']
+  await show($, { stage: 'done', rows: [], notices: [], message, actions: [] })
 }
 
 async function showStatus($: EngineInterface, given?: CoreResult) {
@@ -160,9 +187,18 @@ async function showStatus($: EngineInterface, given?: CoreResult) {
   if (!r.ok) return showError($, r)
   const rec = r.check.state.record
   const actions = rec
-    ? [...r.actions, ...(r.steps.length ? ['install'] : []), 'viewRules', 'reconfigure']
+    ? [...r.actions, ...(r.steps.length ? ['install'] : []), 'tuneOpen', 'viewRules', 'reconfigure']
     : ['setupHere', 'chooseGlobal']
   await show($, { stage: 'status', rows: r.rows, notices: r.notices, message: [], actions: [...new Set<string>(actions)] })
+}
+
+// 상태 화면의 [규칙 맞추기] 버튼: 끝낸 뒤에도 언제든 다시 할 수 있다.
+async function showTuneFromStatus($: EngineInterface) {
+  const r = await run($, ['status'])
+  if (!r.ok) return showError($, r)
+  const target: string | undefined = r.check.state.record?.target
+  if (!target) return showStatus($, r)
+  return showTune($, target, [])
 }
 
 async function sync($: EngineInterface) {
@@ -219,6 +255,9 @@ async function runAction($: EngineInterface, action: string) {
     case 'fixCodex': return simple($, ['step', 'codexPath'], ['⚠ VS Code를 창만 닫지 말고 완전히 껐다 켜야 적용됩니다.'])
     case 'viewRules': return viewRules($)
     case 'reconfigure': return show($, CHOOSE)
+    case 'tuneStart': return tuneStart($)
+    case 'tuneLater': return tuneLater($)
+    case 'tuneOpen': return showTuneFromStatus($)
     default: return boot($, false)
   }
 }

@@ -20,6 +20,9 @@ export const ACTION_LABELS: Record<string, string> = {
   viewRules: '지금 규칙 보기',
   reconfigure: '적용 범위 다시 고르기',
   recheck: '다시 확인',
+  tuneStart: '👉 지금 규칙 맞추기',
+  tuneLater: '나중에',
+  tuneOpen: '규칙 맞추기',
 }
 
 const CHOOSE_TEXT: [string, string, string][] = [
@@ -42,6 +45,7 @@ const TITLES: Partial<Record<OrchestraView['stage'], string>> = {
   installing: '🎼 오케스트라 설치 · 2/3 설치 중',
   choose: '🎼 오케스트라 설치 · 3/3 오케스트라를 어디에 적용할까요?',
   status: '🎼 오케스트라 상태',
+  tune: '🎼 마지막 단계 · 규칙을 내 방식에 맞추기',
 }
 
 // workers: 상태·완료 화면 아래에 붙이는 "워커 현황" 칸 (설치 중에는 보이지 않음)
