@@ -27,6 +27,9 @@ Node.js → VS Code → Claude Code(VS Code 확장 + claude 명령 + 로그인)
 - macOS "확인되지 않은 개발자": 파일을 오른쪽 클릭 → [열기] → [열기]
   (그래도 안 열리면 터미널에서 `chmod +x ~/Downloads/orchestra-install.command` 후 다시 더블클릭)
 
+**VS Code에 "dispatch MCP server is not registered in this workspace. Register it…?" 알림이 뜨면 [Not in this workspace]를 누르세요.**
+확장 프로그램은 프로젝트 폴더의 `.mcp.json`만 보고 연결 여부를 판단해서, 오케스트라가 모든 프로젝트에 연결해 두었어도 새 프로젝트마다 한 번씩 묻습니다. [Register]를 누르면 그 프로젝트에 `.mcp.json`(과 원하면 영어 규칙)이 생기고 연결이 두 번 겹칩니다.
+
 로그인 창(Claude, Codex)은 직접 로그인해 주세요. 끝나면 Claude Code를 다시 시작하면 됩니다.
 
 ## 원칙: 이미 있는 것은 건드리지 않습니다

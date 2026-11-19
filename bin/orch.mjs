@@ -51,6 +51,11 @@ const DONE = [
   '- 규칙 고치기: Claude에게 말로 하면 됩니다. 예) "오케스트라 규칙에서 작은 일은 직접 하게 바꿔줘"',
   '',
   '고친 규칙은 확장 프로그램을 업데이트해도 바뀌지 않습니다.',
+  '',
+  // hooks/tune.ts의 EXT_NOTICE와 같게 유지
+  '⚠ VS Code에 "…dispatch MCP server is not registered in this workspace. Register it…?" 알림이 뜨면',
+  '   [Not in this workspace]를 누르세요. 오케스트라가 이미 모든 프로젝트에 연결해 두었습니다.',
+  '   [Register]를 누르면 그 프로젝트에 파일이 생기고 연결이 두 번 겹칩니다. (새 프로젝트마다 한 번씩 뜹니다)',
 ]
 
 const CHOOSE = `🎼 오케스트라를 어디에 적용할까요?

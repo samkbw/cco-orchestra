@@ -1,5 +1,12 @@
 // 규칙 맞추기: 설치 마지막 단계. 버튼을 누르면 Claude가 대화로 하나씩 물어보고, 답한 대로 오케스트라 규칙 구간을 고친다.
 
+// 확장 프로그램이 프로젝트마다 띄우는 등록 알림 안내 (확장은 프로젝트 .mcp.json만 보고 판단해서, 전역 연결이 있어도 묻는다)
+export const EXT_NOTICE = [
+  '⚠ VS Code에 "…dispatch MCP server is not registered in this workspace. Register it…?" 알림이 뜨면',
+  '   [Not in this workspace]를 누르세요. 오케스트라가 이미 모든 프로젝트에 연결해 두었습니다.',
+  '   [Register]를 누르면 그 프로젝트에 파일이 생기고 연결이 두 번 겹칩니다. (새 프로젝트마다 한 번씩 뜹니다)',
+]
+
 export const TUNE_TEXT = [
   '지금 규칙은 확장 프로그램을 만든 사람의 방식 그대로입니다.',
   '내 방식과 다르면 Claude가 내 생각과 다르게 일을 나눕니다.',

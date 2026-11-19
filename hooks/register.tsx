@@ -5,7 +5,7 @@ import type { OrchestraView, StepRow } from '../types'
 import { STEP_TIMEOUT_MS, core, installNode } from './core'
 import type { CoreResult } from './core'
 import { renderPane } from './view'
-import { TUNE_TEXT, tunePrompt } from './tune'
+import { EXT_NOTICE, TUNE_TEXT, tunePrompt } from './tune'
 import { isDispatch, renderDispatchRow, renderWorkerBoard, renderWorkerSection, rewriteSpinner, startWorkerBoard } from './workers'
 
 const PANE = 'orchestra'
@@ -33,6 +33,8 @@ const DONE = [
   '- 규칙 고치기: Claude에게 말로 하면 됩니다. 예) "오케스트라 규칙에서 작은 일은 직접 하게 바꿔줘"',
   '',
   '고친 규칙은 확장 프로그램을 업데이트해도 바뀌지 않습니다.',
+  '',
+  ...EXT_NOTICE,
   '',
 ]
 
@@ -161,7 +163,9 @@ const isTuneWaiting = (r: CoreResult) => r.check?.state?.record && (r.check.stat
 
 async function showTune($: EngineInterface, target: string, before: string[]) {
   await update($, tuneTarget, () => target)
-  await show($, { stage: 'tune', rows: [], notices: [], message: [...before, ...(before.length ? ['', '────────'] : []), ...TUNE_TEXT], actions: ['tuneStart', 'tuneLater'] })
+  // 터미널로 설치한 사람은 완료 안내(before)를 못 봤으므로 확장 알림 안내를 같이 보여 준다.
+  const message = before.length ? [...before, '', '────────', ...TUNE_TEXT] : [...TUNE_TEXT, '', ...EXT_NOTICE]
+  await show($, { stage: 'tune', rows: [], notices: [], message, actions: ['tuneStart', 'tuneLater'] })
 }
 
 // 버튼: 기록 → Claude에게 질문 시작을 맡긴다.
