@@ -5,6 +5,7 @@ import type { OrchestraView, StepRow } from '../types'
 import { STEP_TIMEOUT_MS, core, installNode } from './core'
 import type { CoreResult } from './core'
 import { renderPane } from './view'
+import { autoCleanExt } from './extclean'
 import { EXT_DETAIL, EXT_NOTICE, TUNE_TEXT, tunePrompt } from './tune'
 import { isDispatch, renderDispatchRow, renderWorkerBoard, renderWorkerSection, rewriteSpinner, startWorkerBoard } from './workers'
 
@@ -288,12 +289,24 @@ async function command($: EngineInterface, args: string) {
   }
 }
 
+async function cleanThenBoot($: EngineInterface) {
+  await autoCleanExt($, await projectDir($), args => run($, args)).catch(err => $.ui.log(`orchestra: 확장 규칙 확인 실패: ${String(err)}`, { to: 'debug' }))
+  await boot($, true)
+}
+
 export const register: Register = on => {
   on('session.start', async ($, e, next) => {
     await $.command.register({ name: 'orch', description: '오케스트라 상태·설치 (install · status · apply global|project · sync)' })
     // 세션 시작을 늦추지 않도록 확인은 뒤에서 한다.
-    void boot($, true).catch(err => $.ui.log(`orchestra: 시작 확인 실패: ${String(err)}`, { to: 'debug' }))
+    // 확장이 프로젝트에 넣은 규칙을 먼저 정리한 뒤 상태를 본다 (정리했으면 그 알림이 다시 뜨지 않게).
+    void cleanThenBoot($).catch(err => $.ui.log(`orchestra: 시작 확인 실패: ${String(err)}`, { to: 'debug' }))
     void startWorkerBoard($).catch(err => $.ui.log(`orchestra: 워커 현황 시작 실패: ${String(err)}`, { to: 'debug' }))
+    return next(e)
+  })
+
+  // 대화 중에 확장이 규칙을 넣을 수 있으므로 메시지를 보낼 때도 확인한다 (파일이 바뀌었을 때만 읽음, 기다리지 않음).
+  on('prompt.submit', async ($, e, next) => {
+    void autoCleanExt($, await projectDir($), args => run($, args)).catch(err => $.ui.log(`orchestra: 확장 규칙 확인 실패: ${String(err)}`, { to: 'debug' }))
     return next(e)
   })
 
