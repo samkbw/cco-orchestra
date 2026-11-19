@@ -16,12 +16,18 @@ export async function readBasePolicy($: EngineInterface, node: string, extDir: s
   if (ran.exitCode !== 0 || !ran.stdout.includes(EXT_START) || !ran.stdout.includes(EXT_END)) {
     throw new Error(`확장 프로그램에서 기본 규칙을 읽지 못함 (구조가 바뀌었을 수 있음): ${ran.stderr.trim().split(/\r?\n/)[0] ?? ''}`)
   }
-  return ran.stdout
+  return ran.stdout.replace(/\r\n/g, '\n')
+}
+
+// 확장 프로그램이 우선순위 규칙 제목을 바꾸면 빼지 못하므로, 빠지는지 미리 확인한다.
+export function hasDroppedSection(base: string): boolean {
+  return DROPPED_SECTION.test(base.replace(/\r\n/g, '\n'))
 }
 
 // 기본 규칙 원문 → 이 패키지 구간. 확장 표시는 빼고 우선순위 규칙은 지운다.
 export function toBlock(base: string, version: string): string {
-  const inner = base.slice(base.indexOf(EXT_START) + EXT_START.length, base.indexOf(EXT_END))
+  const plain = base.replace(/\r\n/g, '\n')
+  const inner = plain.slice(plain.indexOf(EXT_START) + EXT_START.length, plain.indexOf(EXT_END))
   const body = inner.replace(DROPPED_SECTION, '').trim()
   return [
     START,
@@ -32,37 +38,52 @@ export function toBlock(base: string, version: string): string {
   ].join('\n')
 }
 
+function cut(text: string, start: string, end: string): { s: number; e: number } | null {
+  const s = text.indexOf(start)
+  const e = text.indexOf(end, s)
+  return s >= 0 && e > s ? { s, e: e + end.length } : null
+}
+
 export function findBlock(text: string): string | null {
-  const s = text.indexOf(START)
-  const e = text.indexOf(END)
-  return s >= 0 && e > s ? text.slice(s, e + END.length) : null
+  const at = cut(text, START, END)
+  return at ? text.slice(at.s, at.e) : null
 }
 
 // 구간이 있으면 바꾸고, 없으면 파일 끝에 붙인다.
+// 규칙에 $` 같은 글자가 있어 String.replace를 쓰면 치환 패턴으로 해석되므로 잘라 붙인다.
 export function upsertBlock(text: string, block: string): string {
-  const old = findBlock(text)
-  if (old !== null) return text.replace(old, block)
+  const at = cut(text, START, END)
+  if (at) return text.slice(0, at.s) + block + text.slice(at.e)
   return text.trim() === '' ? `${block}\n` : `${text.replace(/\s*$/, '')}\n\n${block}\n`
 }
 
+function removeRange(text: string, start: string, end: string): string {
+  const at = cut(text, start, end)
+  if (!at) return text
+  const out = `${text.slice(0, at.s).replace(/\s*$/, '')}\n\n${text.slice(at.e).replace(/^\s*/, '')}`
+  return out.trim() === '' ? '' : `${out.replace(/\s*$/, '')}\n`
+}
+
+// 이 패키지 구간만 지운다 (적용 범위를 바꿀 때 예전 범위 정리용).
+export function removeBlock(text: string): string {
+  return removeRange(text, START, END)
+}
+
 export function hasExtBlock(text: string): boolean {
-  return text.includes(EXT_START) && text.includes(EXT_END)
+  return cut(text, EXT_START, EXT_END) !== null
 }
 
-// 확장 프로그램이 프로젝트 CLAUDE.md에 넣은 기본 규칙 구간을 지운다.
+// 확장 프로그램이 프로젝트 CLAUDE.md에 넣은 기본 규칙 구간만 지운다.
 export function removeExtBlock(text: string): string {
-  const s = text.indexOf(EXT_START)
-  const e = text.indexOf(EXT_END)
-  if (s < 0 || e < s) return text
-  const out = `${text.slice(0, s).replace(/\s*$/, '')}\n${text.slice(e + EXT_END.length).replace(/^\s*/, '\n')}`
-  return `${out.replace(/\s*$/, '')}\n`
+  return removeRange(text, EXT_START, EXT_END)
 }
 
-// 고쳤는지 판단용 간단한 해시 (FNV-1a)
+// 고쳤는지 판단용 간단한 해시 (FNV-1a). 줄바꿈(CRLF/LF)·줄 끝 공백 차이는 고친 것으로 보지 않는다.
 export function hashText(text: string): string {
+  const plain = text.replace(/\r\n/g, '\n').replace(/[ \t]+$/gm, '').trim()
   let h = 0x811c9dc5
-  for (let i = 0; i < text.length; i++) {
-    h ^= text.charCodeAt(i)
+  for (let i = 0; i < plain.length; i++) {
+    h ^= plain.charCodeAt(i)
     h = Math.imul(h, 0x01000193) >>> 0
   }
   return h.toString(16)

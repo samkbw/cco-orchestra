@@ -19,6 +19,8 @@ export type CodexState = {
   isFound: boolean
   // Windows npm 설치에서 PATH에 넣어야 할 codex.exe 폴더
   fixDir: string | null
+  // 확인 자체가 실패했을 때 이유
+  error?: string
 }
 
 const EXT_PREFIX = 'toragonite.claude-code-orchestrator-'
@@ -68,6 +70,14 @@ export async function probeCodex($: EngineInterface, node: string): Promise<Code
   return { isInstalled: raw.installed, isFound: raw.found, fixDir: raw.found ? null : raw.fixDir }
 }
 
+export async function safeProbeCodex($: EngineInterface, node: string): Promise<CodexState> {
+  try {
+    return await probeCodex($, node)
+  } catch (err) {
+    return { isInstalled: false, isFound: false, fixDir: null, error: String(err) }
+  }
+}
+
 // Node.js가 없으면 orchestrator도 동작하지 않으므로 null을 돌려준다.
 export async function detectEnv($: EngineInterface): Promise<Env | null> {
   let info: { home: string; platform: string; node: string }
@@ -89,17 +99,20 @@ export async function detectEnv($: EngineInterface): Promise<Env | null> {
     extVersion: ext?.version ?? null,
     serverJs,
     hasServer: await $.fs.exists(serverJs),
-    codex: await probeCodex($, info.node),
+    // Codex는 선택이라, 확인이 실패해도 설정은 막지 않는다 (이유는 error에 남긴다).
+    codex: await safeProbeCodex($, info.node),
   }
 }
 
 // Windows: codex.exe 폴더를 사용자 PATH 끝에 더한다 (이미 있으면 그대로).
+// %USERPROFILE% 같은 값이 풀려 버리지 않게 레지스트리 원문을 읽고 ExpandString으로 쓴다.
 export async function addCodexPath($: EngineInterface, dir: string): Promise<void> {
+  const raw = "([string](Get-Item 'HKCU:\\Environment').GetValue('Path','',[Microsoft.Win32.RegistryValueOptions]::DoNotExpandEnvironmentNames))"
   const script = [
     `$d='${dir.replace(/'/g, "''")}'`,
-    "$p=[Environment]::GetEnvironmentVariable('Path','User')",
-    "if((($p -split ';') -notcontains $d)){[Environment]::SetEnvironmentVariable('Path',(($p.TrimEnd(';'))+';'+$d),'User')}",
-    "(([Environment]::GetEnvironmentVariable('Path','User') -split ';') -contains $d)",
+    `$p=${raw}`,
+    "if((($p -split ';') -notcontains $d)){$n=if($p.Trim() -eq ''){$d}else{$p.TrimEnd(';')+';'+$d}; Set-ItemProperty -Path 'HKCU:\\Environment' -Name Path -Value $n -Type ExpandString}",
+    `((${raw} -split ';') -contains $d)`,
   ].join('; ')
   const ran = await $.process.run(['powershell.exe', '-NoProfile', '-NonInteractive', '-Command', script], { timeoutMs: 20000 })
   if (ran.exitCode !== 0 || !/True/.test(ran.stdout)) throw new Error(`PATH 추가 실패: ${ran.stderr.trim().split(/\r?\n/)[0] ?? ran.stdout.trim()}`)

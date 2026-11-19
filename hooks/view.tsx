@@ -2,12 +2,13 @@ import type { EngineInterface } from 'claude-code'
 
 import type { OrchestraView } from '../types'
 
-// 버튼 글자 (키는 register.tsx의 ACTIONS와 같다)
+// 버튼 글자 (키는 register.tsx의 runAction과 같다)
 export const ACTION_LABELS: Record<string, string> = {
   chooseGlobal: '1. 모든 프로젝트에 적용 (추천)',
   chooseProject: '2. 프로젝트마다 따로 설정',
   setupHere: '이 프로젝트에 오케스트라 켜기',
   sync: '기본 규칙 새 버전으로 갱신',
+  mergeDone: '합치기 끝냄',
   cleanExt: '확장 프로그램이 넣은 프로젝트 규칙 지우기',
   keepExt: '그대로 두기',
   fixCodex: 'Codex를 찾을 수 있게 PATH에 추가',

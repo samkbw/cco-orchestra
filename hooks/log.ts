@@ -8,10 +8,22 @@ export function logPath(home: string): string {
   return `${home}/.claude/orchestra/orchestra.log`
 }
 
+// 한 번 알게 된 홈 폴더는 기억해 두고, home을 모르는 곳(null)에서도 파일에 남긴다.
+let knownHome: string | null = null
+// 기록이 겹쳐 줄이 빠지지 않게 차례로 쓴다.
+let queue: Promise<void> = Promise.resolve()
+
 // 기록에 실패해도 설정 작업은 막지 않는다.
 export async function writeLog($: EngineInterface, home: string | null, text: string): Promise<void> {
   $.ui.log(`orchestra: ${text}`, { to: 'debug' })
-  if (!home) return
+  if (home) knownHome = home
+  const at = home ?? knownHome
+  if (!at) return
+  queue = queue.then(() => appendLine($, at, text))
+  return queue
+}
+
+async function appendLine($: EngineInterface, home: string, text: string): Promise<void> {
   try {
     const path = logPath(home)
     const stamp = new Date(Date.now() + KST_OFFSET_MS).toISOString().slice(0, 19).replace('T', ' ')

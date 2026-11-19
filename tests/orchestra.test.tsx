@@ -1,6 +1,22 @@
 import { expect, test } from 'claude-code/testing'
 
-import { END, EXT_END, EXT_START, START, findBlock, hasExtBlock, hashText, removeExtBlock, toBlock, upsertBlock } from '../hooks/rules'
+import { END, EXT_END, EXT_START, START, findBlock, hasExtBlock, hashText, removeBlock, removeExtBlock, toBlock, upsertBlock } from '../hooks/rules'
+
+test('규칙에 $` 같은 글자가 있어도 다시 넣을 때 파일이 깨지지 않는다', async () => {
+  const tricky = `${EXT_START}\n# P\n- no \`cd\`, pipe, \`$\`, backticks, $& and $' here\n${EXT_END}`
+  const mine = '# 내 규칙\n* A\n'
+  const once = upsertBlock(mine, toBlock(tricky, '1.0.0'))
+  const twice = upsertBlock(once, toBlock(tricky, '1.0.1'))
+  expect(twice.split('# 내 규칙').length).toBe(2)
+  expect(twice.includes("$& and $' here")).toBe(true)
+  expect(removeBlock(twice).trim()).toBe(mine.trim())
+})
+
+test('줄바꿈(CRLF/LF)만 바뀐 규칙은 고친 것으로 보지 않는다', async () => {
+  const block = toBlock(`${EXT_START}\n# P\n- a\n- b\n${EXT_END}`, '1.0.0')
+  expect(hashText(block.replace(/\n/g, '\r\n'))).toBe(hashText(block))
+  expect(hashText(block.replace('- a', '- a 고침'))).not.toBe(hashText(block))
+})
 
 const BASE = `${EXT_START}\n\n# Dispatch policy\n\n## Session start protocol\n- a\n\n## Precedence\n\n- override\n\n## Division of labor\n- b\n${EXT_END}\n`
 const PANE = {
@@ -55,6 +71,7 @@ test('처음 실행하면 적용 범위를 고르는 안내가 뜬다', async ($
     return { value: { exitCode: 0, stdout, stderr: '' } as never }
   })
   on('session.start', (_$, e) => ({ cwd: e.cwd }))
+  on('session.root', () => ({ value: 'C:/p' }))
 
   await $.session.start({ cwd: 'C:/p', surface: 'terminal', isInteractive: true } as never)
   const ui = await $.ui.mount({ ...PANE, surface: 'terminal' } as never)
