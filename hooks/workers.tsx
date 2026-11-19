@@ -7,7 +7,7 @@ import type { EngineInterface } from 'claude-code'
 
 import type { WorkerRow } from '../types'
 
-const POLL_MS = 2000
+const POLL_MS = 1000
 const TAIL_BYTES = 256 * 1024
 // 끝난 일: 띠·맡긴 줄에는 이만큼만, 패널에는 RECENT_MS 동안 최근 RECENT_MAX개까지 보여 준다.
 const KEEP_DONE_MS = 10000
