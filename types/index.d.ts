@@ -45,7 +45,7 @@ declare module 'claude-code' {
   interface PluginState {
     orchestra: {
       view: OrchestraView
-      workers: Record<string, WorkerRow[]>
+      workers: WorkerRow[]
     }
   }
 }
