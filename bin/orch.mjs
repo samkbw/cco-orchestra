@@ -175,17 +175,21 @@ async function install(opts) {
   }
 }
 
+// VS Code 밖에서 켜 둔 터미널 Claude는 VS Code를 다시 시작해도 그대로라 따로 알린다.
+const TERMINAL_NOTE = '⚠ VS Code 밖 터미널에서 Claude를 켜 두었다면, 그 창에 /reload-plugins 를 입력하거나 Claude를 다시 켜 주세요. 켜면 "규칙 맞추기" 안내가 뜹니다.'
+
 // 열려 있는 VS Code는 다시 시작해야 새 플러그인·연결을 읽는다. 한 번 묻고 다시 시작한다.
 async function offerRestart(rl) {
   if (!(await withSpinner('열려 있는 VS Code를 확인하는 중', () => isVsCodeRunning()))) {
     console.log('\n✔ VS Code를 열면 바로 연결됩니다.')
+    console.log(TERMINAL_NOTE)
     return
   }
   if (isInsideVsCode()) {
     console.log('\n⚠ 이 설치는 VS Code 안에서 실행 중이라 직접 다시 시작할 수 없습니다. VS Code를 껐다 켜 주세요.')
     return
   }
-  console.log('\n열려 있는 VS Code를 다시 시작해야 오케스트라가 연결됩니다. (VS Code와 Claude를 닫았다가 다시 엽니다)')
+  console.log('\n열려 있는 VS Code를 다시 시작해야 오케스트라가 연결됩니다.')
   console.log('  · 저장하지 않은 파일과 열려 있던 창은 VS Code가 그대로 다시 열어 줍니다.')
   console.log('  · 진행 중인 Claude 대화는 끊깁니다. 다시 열면 대화 기록에서 이어서 할 수 있습니다.')
   const answer = rl ? await ask(rl, '지금 다시 시작할까요? (Y/n) ') : 'n'
@@ -195,10 +199,11 @@ async function offerRestart(rl) {
   }
   const result = await withSpinner('VS Code를 다시 시작하는 중', () => restartVsCode())
   console.log({
-    restarted: '✔ VS Code와 Claude를 다시 열었습니다. 오케스트라가 연결되어 있고, Claude에 "규칙 맞추기" 화면이 뜹니다.',
+    restarted: '✔ VS Code를 다시 열었습니다. VS Code 안 Claude는 바로 연결되어 있고, Claude를 열면 "규칙 맞추기" 화면이 뜹니다.',
     closeTimeout: '⚠ VS Code가 닫히지 않았습니다 (저장 여부를 묻는 창이 떠 있을 수 있음). VS Code를 직접 껐다 켜 주세요.',
     openFailed: '⚠ VS Code를 닫았지만 다시 열지 못했습니다. VS Code를 직접 열어 주세요. 열면 오케스트라가 연결되어 있습니다.',
   }[result])
+  console.log(TERMINAL_NOTE)
 }
 
 

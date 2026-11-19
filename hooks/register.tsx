@@ -80,7 +80,11 @@ async function boot($: EngineInterface, isQuiet: boolean) {
     return startWizard($, r)
   }
   // 규칙 맞추기를 아직 안 했으면 (한 번 미룬 것 포함) 먼저 묻는다.
-  if (isTuneWaiting(r)) return showTune($, rec.target, [])
+  // 좁은 터미널에서는 저절로 여는 패널이 바로 뜨지 않으므로, 어느 너비에서나 보이는 알림도 띄운다.
+  if (isTuneWaiting(r)) {
+    $.ui.toast('🎼 오케스트라 마지막 단계: 규칙을 내 방식에 맞춰 주세요. /orch 를 입력하면 시작합니다.')
+    return showTune($, rec.target, [])
+  }
   if (r.notices.length > 0) {
     await showStatus($, r)
     $.ui.toast(`오케스트라: ${r.notices[0]}`)
@@ -289,7 +293,8 @@ async function command($: EngineInterface, args: string) {
     case 'install': return startWizard($)
     case 'apply': return arg === 'project' ? apply($, 'project') : apply($, 'global')
     case 'sync': return sync($)
-    default: return showStatus($)
+    // 규칙 맞추기를 아직 안 했으면 그 화면, 아니면 상태 화면
+    default: return boot($, false)
   }
 }
 

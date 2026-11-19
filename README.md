@@ -32,7 +32,7 @@ Node.js → VS Code → Claude Code(VS Code 확장 + claude 명령 + 로그인)
 - macOS "확인되지 않은 개발자": 파일을 오른쪽 클릭 → [열기] → [열기]
   (그래도 안 열리면 터미널에서 `chmod +x ~/Downloads/orchestra-install.command` 후 다시 더블클릭)
 
-로그인 창(Claude, Codex)은 직접 로그인해 주세요. 끝나면 열려 있는 VS Code를 다시 시작할지 한 번 묻고, 다시 시작한 뒤 Claude까지 열어 줍니다.
+로그인 창(Claude, Codex)은 직접 로그인해 주세요. 끝나면 열려 있는 VS Code를 다시 시작할지 한 번 묻습니다. VS Code 밖 터미널에서 Claude를 켜 두었다면 그 창에 `/reload-plugins`를 입력하거나 다시 켜 주세요.
 
 워커 계정 추가·기본 모델·동시에 돌릴 개수·시간 제한 같은 **세부 설정은 VS Code 왼쪽의 Claude Code Orchestrator 화면(설정)에서** 내 환경에 맞게 조정해 주세요.
 
