@@ -30,6 +30,8 @@ if errorlevel 1 (
 )
 
 rem 2) 패키지를 내려받아 설치 화면 실행 (git 없이 GitHub에서 바로 받음)
+echo  설치 프로그램을 받는 중입니다. 잠시 기다려 주세요... (처음엔 30초쯤 걸릴 수 있음)
+echo.
 call npx -y https://github.com/samkbw/cco-orchestra/archive/refs/heads/main.tar.gz install %*
 echo.
 pause

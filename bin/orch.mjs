@@ -7,7 +7,11 @@ import { check } from '../lib/check.mjs'
 import { DEPENDS_ON, freshPlan, plan, runStep } from '../lib/install.mjs'
 import { registerPlugin } from '../lib/plugin.mjs'
 import { notices, summarize } from '../lib/status.mjs'
+import { withSpinner } from '../lib/spinner.mjs'
 import { backupDir, log, logFile } from '../lib/sys.mjs'
+
+// 사람이 직접 로그인하는 단계: 움직이는 표시 대신 안내
+const LOGIN_STEPS = new Set(['claudeLogin', 'codexLogin'])
 
 const HELP = `오케스트라 (Claude Code Orchestrator 전용 설정)
 
@@ -85,7 +89,7 @@ async function install(opts) {
   if (opts.scope !== undefined) assertScope(opts.scope)
   const rl = opts.yes ? null : readline.createInterface({ input: process.stdin, output: process.stdout })
   try {
-    const { check: c, steps: all } = freshPlan(cwd)
+    const { check: c, steps: all } = await withSpinner('지금 PC 상태를 확인하는 중', () => freshPlan(cwd))
     const steps = opts.skipCodex ? all.filter(s => !s.isOptional) : all
     console.log('\n지금 PC 상태\n')
     printRows(summarize({ ...c, mcp: null }))
@@ -111,8 +115,11 @@ async function install(opts) {
         continue
       }
       try {
-        // 로그인 화면은 --yes여도 터미널에 보여 준다.
-        console.log(`  ✔ ${await runStep(s.id, { isInteractive: true })}`)
+        // 로그인 화면은 --yes여도 터미널에 보여 준다. 로그인은 사람이 하므로 움직이는 표시 대신 안내를 띄운다.
+        const isLogin = LOGIN_STEPS.has(s.id)
+        if (isLogin) console.log('  로그인 창(브라우저)이 열립니다. 로그인을 마치면 자동으로 다음으로 넘어갑니다.')
+        const message = isLogin ? await runStep(s.id, { isInteractive: true }) : await withSpinner(`${s.title} 진행 중`, () => runStep(s.id, { isInteractive: true }))
+        console.log(`  ✔ ${message}`)
       } catch (err) {
         failed.add(s.id)
         console.log(`  ✖ ${err.message}`)
@@ -127,9 +134,9 @@ async function install(opts) {
         scope = (await ask(rl, '번호를 고르세요 (1/2, 기본 1) ')) === '2' ? 'project' : 'global'
       } else scope = 'global'
     }
-    const done = await apply(scope, cwd)
+    const done = await withSpinner('규칙과 연결을 적용하는 중', () => apply(scope, cwd))
     if (!opts.noPlugin) {
-      const p = registerPlugin()
+      const p = await withSpinner('Claude 플러그인을 등록하는 중 (처음엔 1분쯤 걸릴 수 있음)', () => registerPlugin())
       console.log(p === 'already' ? '\n✔ Claude 플러그인은 이미 설치돼 있습니다.' : '\n✔ Claude 플러그인을 설치했습니다.')
     }
     console.log(`\n${DONE.join('\n')}\n`)
