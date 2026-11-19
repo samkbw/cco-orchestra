@@ -1,6 +1,6 @@
 {
   "name": "cco-orchestra",
-  "version": "0.7.5",
+  "version": "0.7.6",
   "description": "Claude Code Orchestrator(VS Code 확장) 전용 설정 패키지 (비공식)",
   "type": "module",
   "bin": { "orch": "bin/orch.mjs" },
