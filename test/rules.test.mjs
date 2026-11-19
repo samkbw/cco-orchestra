@@ -39,8 +39,12 @@ const READY = {
   ext: { version: '2.0.1' },
   server: true,
   codex: { isInstalled: true, isFound: true, fixDir: null, isLoggedIn: true },
-  worker: { codexWorkers: ['codex1'] },
+  worker: { codexWorkers: ['codex1'], claudeWorkers: ['claude'] },
 }
+
+test('Claude 작업 워커가 없으면 1개 등록을 계획한다 (메인은 지휘만 함)', () => {
+  assert.deepEqual(plan({ ...READY, worker: { codexWorkers: ['codex1'], claudeWorkers: [] } }).map(s => s.id), ['claudeWorker'])
+})
 
 test('다 있으면 계획이 비어 있다 (아무것도 바꾸지 않음)', () => {
   assert.deepEqual(plan(READY), [])
