@@ -35,6 +35,8 @@ test('줄바꿈만 바뀐 규칙은 고친 것으로 보지 않는다', () => {
 const READY = {
   node: { version: '24.0.0', isOk: true },
   claudeCli: true,
+  claudeExt: true,
+  claudeLogin: true,
   vscode: { hasCli: true },
   ext: { version: '2.0.1' },
   server: true,
@@ -64,6 +66,13 @@ test('VS Code가 없고 설치 도구(winget·brew)도 없으면 사이트 안�
 test('VS Code가 없고 winget이 있으면 VS Code → 확장 → 서버를 자동으로 이어서 한다', () => {
   const steps = plan({ ...READY, ext: null, server: false, vscode: { hasCli: false, installer: 'winget' } })
   assert.deepEqual(steps.map(s => [s.id, Boolean(s.manual)]), [['vscode', false], ['ext', false], ['server', false]])
+})
+
+test('아무것도 없는 PC(winget 있음): VS Code → Claude Code → 오케스트라 순서로 모두 자동', () => {
+  const steps = plan({ ...READY, claudeCli: false, claudeExt: false, claudeLogin: null, ext: null, server: false, vscode: { hasCli: false, installer: 'winget' }, worker: { codexWorkers: [], claudeWorkers: [] }, codex: { isInstalled: false, isFound: false, fixDir: null } })
+  const ids = steps.map(s => s.id)
+  assert.deepEqual(ids.slice(0, 7), ['vscode', 'claudeExt', 'claudeCli', 'claudeLogin', 'ext', 'server', 'claudeWorker'])
+  assert.ok(steps.filter(s => !s.isOptional).every(s => !s.manual))
 })
 
 test('VS Code가 이미 있으면 VS Code 단계는 없다 (업데이트하지 않음)', () => {
