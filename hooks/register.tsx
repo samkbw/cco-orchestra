@@ -5,7 +5,7 @@ import type { OrchestraView, StepRow } from '../types'
 import { STEP_TIMEOUT_MS, core, installNode } from './core'
 import type { CoreResult } from './core'
 import { renderPane } from './view'
-import { renderWorkerBoard, startWorkerBoard } from './workers'
+import { isDispatch, renderDispatchRow, renderWorkerBoard, startWorkerBoard } from './workers'
 
 const PANE = 'orchestra'
 const TITLE = '🎼 오케스트라'
@@ -265,4 +265,9 @@ export const register: Register = on => {
 
   // 워커 현황: 입력창 위 띠
   on('ui.render', { component: 'AbovePrompt' }, async ($, e, next) => renderWorkerBoard($, e as never, () => next(e)))
+  // VS Code 채팅창: 워커에게 맡긴 줄 아래 (AbovePrompt는 VS Code에 그려지지 않음)
+  on('ui.render', { component: 'ToolUse' }, async ($, e, next) => {
+    const row = await next(e)
+    return isDispatch(e.props.tool) ? renderDispatchRow($, e as never, row) : row
+  })
 }

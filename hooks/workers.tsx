@@ -96,7 +96,37 @@ const clock = (ms: number) => {
   return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`
 }
 
-export async function renderWorkerBoard($: EngineInterface, e: never, next: () => Promise<unknown>) {
+// VS Code 채팅창용: 워커에게 맡긴 줄(dispatch_task·dispatch_tasks) 아래에 그 줄의 일만 보여 준다.
+const DISPATCH_TOOL = /cco-dispatch__dispatch_tasks?$/
+export const isDispatch = (tool: string) => DISPATCH_TOOL.test(tool)
+
+function titlesOf(input: unknown): string[] {
+  const value = input as { tasks?: { title?: unknown }[]; title?: unknown }
+  const list = Array.isArray(value?.tasks) ? value.tasks : [value]
+  return list.map(task => String(task?.title ?? '')).filter(Boolean)
+}
+
+export async function renderDispatchRow($: EngineInterface, e: any, row: unknown) {
+  const props = (e as { props: { input: unknown; isRunning: boolean } }).props
+  if (!props.isRunning) return row
+  const titles = titlesOf(props.input)
+  const rows = (await read($, board)).filter((item: WorkerRow) => titles.includes(item.title))
+  if (!rows.length) return row
+  const { Box, Text } = $.ui.resolve(e)
+  const now = Date.now()
+  return (
+    <Box flexDirection="column">
+      {row}
+      {rows.map((item: WorkerRow) => (
+        <Text key={item.id} dimColor={item.status === 'done'} color={item.status === 'error' ? 'red' : undefined}>
+          {`  ${STATE_MARK[item.status]} ${item.title}  ${[item.worker, item.model].filter(Boolean).join(' · ') || '배정 대기'}  ${STATE_TEXT[item.status]} ${clock((item.endedAt ?? now) - item.startedAt)}`}
+        </Text>
+      ))}
+    </Box>
+  )
+}
+
+export async function renderWorkerBoard($: EngineInterface, e: any, next: () => Promise<unknown>) {
   const rows: WorkerRow[] = await read($, board)
   if (!rows.length) return next()
   const { Box, Text } = $.ui.resolve(e)
