@@ -1,0 +1,8 @@
+{
+  "name": "orchestra",
+  "version": "0.1.0",
+  "description": "Claude Code Orchestrator(VS Code 확장) 전용 설정 패키지: 한 번 실행으로 연결·기본 규칙을 설정하고 확장 업데이트를 따라갑니다.",
+  "author": { "name": "samkbw" },
+  "license": "MIT",
+  "types": "./types/index.d.ts"
+}

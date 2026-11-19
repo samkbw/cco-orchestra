@@ -1,0 +1,6 @@
+{
+  "name": "cco-orchestra",
+  "owner": { "name": "samkbw" },
+  "description": "Claude Code Orchestrator(VS Code 확장) 전용 설정 패키지",
+  "plugins": [{ "name": "orchestra", "source": "./" }]
+}
