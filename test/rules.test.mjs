@@ -55,7 +55,17 @@ test('빠진 것만 계획한다: 확장 없음 + Codex PATH 문제', () => {
   assert.deepEqual(ids, ['ext', 'codexPath', 'codexLogin'])
 })
 
-test('VS Code가 없으면 확장 설치는 직접 해야 함으로 안내한다', () => {
-  const ext = plan({ ...READY, ext: null, vscode: { hasCli: false } }).find(s => s.id === 'ext')
-  assert.ok(ext.manual)
+test('VS Code가 없고 설치 도구(winget·brew)도 없으면 사이트 안내, 확장도 직접', () => {
+  const steps = plan({ ...READY, ext: null, server: false, vscode: { hasCli: false, installer: null } })
+  assert.match(steps.find(s => s.id === 'vscode').manual, /code\.visualstudio\.com/)
+  assert.ok(steps.find(s => s.id === 'ext').manual)
+})
+
+test('VS Code가 없고 winget이 있으면 VS Code → 확장 → 서버를 자동으로 이어서 한다', () => {
+  const steps = plan({ ...READY, ext: null, server: false, vscode: { hasCli: false, installer: 'winget' } })
+  assert.deepEqual(steps.map(s => [s.id, Boolean(s.manual)]), [['vscode', false], ['ext', false], ['server', false]])
+})
+
+test('VS Code가 이미 있으면 VS Code 단계는 없다 (업데이트하지 않음)', () => {
+  assert.ok(!plan({ ...READY, ext: null }).some(s => s.id === 'vscode'))
 })

@@ -9,7 +9,7 @@ import { renderPane } from './view'
 const PANE = 'orchestra'
 const TITLE = '🎼 오케스트라'
 // lib/install.mjs의 DEPENDS_ON과 같게 유지
-const DEPENDS_ON: Record<string, string> = { codexPath: 'codex', codexLogin: 'codex', worker: 'codex' }
+const DEPENDS_ON: Record<string, string> = { ext: 'vscode', server: 'ext', codexPath: 'codex', codexLogin: 'codex', worker: 'codex' }
 const START_MARK = '<!-- orchestra:rules:start -->'
 const END_MARK = '<!-- orchestra:rules:end -->'
 

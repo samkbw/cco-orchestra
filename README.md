@@ -12,6 +12,7 @@
 | 항목 | 이미 있으면 | 없을 때만 |
 |---|---|---|
 | Node.js | 버전만 확인 | 설치 (Claude 패널에서) |
+| VS Code | 그대로 (업데이트하지 않음) | 설치 (Windows winget · macOS brew, 없으면 사이트 안내) |
 | VS Code 확장 | 그대로 (업데이트하지 않음) | 설치 |
 | Codex CLI | 그대로 | 설치 |
 | PATH | 내 값·순서 그대로 | 빠진 폴더 1개만 끝에 추가 |
@@ -83,7 +84,7 @@ Claude 작업 워커는 메인 계정을 같이 쓰므로 사용량도 같이 �
 
 ## 자동으로 할 수 없는 것
 
-- **VS Code 자체 설치**: 없으면 설치 사이트(https://code.visualstudio.com)를 안내합니다.
+- **VS Code 설치 도구가 없을 때**: winget(Windows)·brew(macOS)가 없으면 설치 사이트(https://code.visualstudio.com)를 안내합니다.
 - **Codex 로그인**: 로그인 창은 열어 드리고, 로그인은 직접 해야 합니다.
 - **Claude 다시 시작**: 연결은 Claude를 다시 시작해야 적용됩니다.
 
