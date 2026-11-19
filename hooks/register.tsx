@@ -5,6 +5,7 @@ import type { OrchestraView, StepRow } from '../types'
 import { STEP_TIMEOUT_MS, core, installNode } from './core'
 import type { CoreResult } from './core'
 import { renderPane } from './view'
+import { isDispatch, renderWorkers, watchDispatch } from './workers'
 
 const PANE = 'orchestra'
 const TITLE = '🎼 오케스트라'
@@ -260,4 +261,11 @@ export const register: Register = on => {
   })
 
   on('ui.render', { component: 'Pane', requestId: PANE }, async ($, e) => renderPane($, e, await read($, view), press($)))
+
+  // 워커 현황: 맡긴 줄 아래에 일마다 진행 상태
+  on('tool.call', async ($, e, next) => (isDispatch(e.tool) ? watchDispatch($, e.tool_use_id, e.input, () => next(e)) : next(e)))
+  on('ui.render', { component: 'ToolUse' }, async ($, e, next) => {
+    const row = await next(e)
+    return isDispatch(e.props.tool) ? renderWorkers($, e, row) : row
+  })
 }

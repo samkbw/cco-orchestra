@@ -29,10 +29,23 @@ export type OrchestraView = {
   isBusy: boolean
 }
 
+// 워커 현황 한 줄 (tasks.jsonl의 일 하나)
+export type WorkerRow = {
+  id: string
+  title: string
+  worker: string
+  model: string
+  status: 'waiting' | 'running' | 'done' | 'error' | 'cancelled'
+  startedAt: number
+  endedAt: number | null
+  error: string
+}
+
 declare module 'claude-code' {
   interface PluginState {
     orchestra: {
       view: OrchestraView
+      workers: Record<string, WorkerRow[]>
     }
   }
 }
