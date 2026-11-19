@@ -7,6 +7,28 @@
 
 > 이 패키지는 Claude Code Orchestrator 확장 프로그램 제작자와 관계없는 별도 패키지입니다.
 
+## ⬇ 다운로드 (설치 파일)
+
+| 내 PC | 받기 | 실행 |
+|---|---|---|
+| **Windows** | [**orchestra-install.cmd 받기**](https://github.com/samkbw/cco-orchestra/releases/latest/download/orchestra-install.cmd) | 받은 파일을 더블클릭 |
+| **macOS** | [**orchestra-install.command 받기**](https://github.com/samkbw/cco-orchestra/releases/latest/download/orchestra-install.command) | 받은 파일을 더블클릭 |
+
+설치 파일이 순서대로 다 해 줍니다. 있는 것은 건드리지 않고 없는 것만 설치합니다.
+
+```
+Node.js → VS Code → Claude Code(VS Code 확장 + claude 명령 + 로그인)
+→ Claude Code Orchestrator 확장 → 연결 서버 → Claude 작업 워커
+→ Codex(선택: 설치·로그인·워커) → 적용 범위 고르기 → Claude 플러그인 등록
+```
+
+**처음 실행할 때 경고가 뜨면**
+- Windows "PC 보호" 창: [추가 정보] → [실행]
+- macOS "확인되지 않은 개발자": 파일을 오른쪽 클릭 → [열기] → [열기]
+  (그래도 안 열리면 터미널에서 `chmod +x ~/Downloads/orchestra-install.command` 후 다시 더블클릭)
+
+로그인 창(Claude, Codex)은 직접 로그인해 주세요. 끝나면 Claude Code를 다시 시작하면 됩니다.
+
 ## 원칙: 이미 있는 것은 건드리지 않습니다
 
 | 항목 | 이미 있으면 | 없을 때만 |
