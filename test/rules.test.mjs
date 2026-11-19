@@ -10,7 +10,8 @@ const BASE = `${EXT_START}\n\n# Dispatch policy\n\n## Session start protocol\n- 
 test('우선순위 규칙과 확장 표시를 빼고 패키지 구간으로 감싼다', () => {
   const block = toBlock(BASE, '2.0.1')
   assert.ok(block.startsWith(START) && block.endsWith(END))
-  assert.ok(!block.includes('Precedence') && block.includes('Division of labor') && !block.includes(EXT_START))
+  assert.ok(!block.includes('## Precedence') && block.includes('Division of labor') && !block.includes(EXT_START))
+  assert.ok(block.includes('## 한눈에 보기 (한국어 요약)'))
 })
 
 test('$` 같은 글자가 있어도 다시 넣을 때 파일이 깨지지 않고, 내 규칙은 그대로', () => {
