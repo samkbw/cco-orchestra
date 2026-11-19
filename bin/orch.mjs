@@ -136,7 +136,10 @@ async function install(opts) {
     console.log(`규칙 위치: ${done.target}`)
     done.cleaned.forEach(line => console.log(`정리함: ${line}`))
     done.notes.forEach(line => console.log(`⚠ ${line}`))
-    console.log('⚠ Claude를 다시 시작하면 연결이 적용됩니다.')
+    // 연결은 오케스트라 플러그인이 띄운다. 이미 켜 둔 Claude는 /reload-plugins 또는 다시 시작하면 붙는다.
+    console.log(opts.noPlugin
+      ? '⚠ 연결은 오케스트라 플러그인이 합니다. Claude 입력창에서 /plugin install orchestra --marketplace samkbw/cco-orchestra 로 설치해 주세요.'
+      : '⚠ 열려 있는 Claude에는 /reload-plugins 를 입력하면 연결됩니다 (새로 연 Claude는 바로 연결).')
     return 0
   } finally {
     rl?.close()

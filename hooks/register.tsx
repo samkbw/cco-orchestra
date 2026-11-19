@@ -135,6 +135,9 @@ async function runInstall($: EngineInterface, skipCodex: boolean) {
 async function apply($: EngineInterface, scope: 'global' | 'project') {
   const r = await run($, ['apply', scope], STEP_TIMEOUT_MS)
   if (!r.ok) return showError($, r)
+  // 연결은 플러그인이 띄운다: 다시 시작 없이 지금 세션에 바로 붙인다.
+  const linked = await $.mcp.connect('cco-dispatch').catch(err => ({ isConnected: false, message: String(err) }))
+  $.ui.log(`orchestra: 연결 ${linked.isConnected ? '됨' : `안 됨 (${(linked as { message?: string }).message ?? ''})`}`, { to: 'debug' })
   const status = await run($, ['status'])
   await show($, {
     stage: 'done',
@@ -145,9 +148,7 @@ async function apply($: EngineInterface, scope: 'global' | 'project') {
       `규칙 위치: ${r.target}`,
       ...(r.cleaned as string[]).map(line => `정리함: ${line}`),
       ...(r.notes as string[]).map(line => `⚠ ${line}`),
-      scope === 'global'
-        ? '⚠ Claude를 다시 시작하면 연결이 적용됩니다.'
-        : '⚠ Claude를 다시 시작하면 연결이 적용됩니다. 시작할 때 cco-dispatch 사용을 물으면 허용해 주세요.',
+      linked.isConnected ? '✔ 연결했습니다. 바로 쓸 수 있습니다.' : '⚠ 지금 바로 연결하지 못했습니다. Claude를 다시 시작하면 연결됩니다.',
     ],
     actions: status.ok ? status.actions : [],
   })

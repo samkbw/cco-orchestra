@@ -40,7 +40,7 @@ Node.js → VS Code → Claude Code(VS Code 확장 + claude 명령 + 로그인)
 | PATH | 내 값·순서 그대로 | 빠진 폴더 1개만 끝에 추가 |
 | Claude 작업 워커 | 내 워커·설정 그대로 | 메인 계정을 같이 쓰는 워커 1개 추가 (우선 워커) |
 | Codex 워커 | 내 워커·설정 그대로 | 워커 1개 추가 |
-| 연결 (`cco-dispatch`) | 직접 등록한 것은 그대로 두고 알림 | 등록 |
+| 연결 (`cco-dispatch`) | 직접 등록한 것은 그대로 두고 알림 | 오케스트라 플러그인이 연결 (따로 등록하지 않음) |
 | `CLAUDE.md` | 패키지 구간 밖은 손대지 않음 | 구간 추가 |
 
 - 설치 화면·`orch install`은 바꾸기 전에 무엇을 추가할지 먼저 보여 주고 동의를 받습니다. (`--yes`, `apply`, `sync`처럼 직접 고른 명령은 바로 실행)
@@ -90,8 +90,9 @@ B·C는 터미널에서 묻고 진행하며, 끝나면 Claude 플러그인 등�
 
 | | 1. 모든 프로젝트 | 2. 프로젝트마다 |
 |---|---|---|
-| 연결 등록 | Claude 사용자 설정 | 그 프로젝트 `.mcp.json` |
 | 기본 규칙 | `~/.claude/CLAUDE.md` | 그 프로젝트 `CLAUDE.md` |
+
+연결(`cco-dispatch`)은 두 경우 모두 오케스트라 플러그인이 맡습니다. 설치 화면에서 적용하면 Claude를 다시 시작하지 않아도 바로 연결됩니다.
 
 범위를 바꾸면 예전 범위에서 **이 패키지가 넣은 것만** 지웁니다.
 
@@ -108,7 +109,7 @@ Claude 작업 워커는 메인 계정을 같이 쓰므로 사용량도 같이 �
 
 - **VS Code 설치 도구가 없을 때**: winget(Windows)·brew(macOS)가 없으면 설치 사이트(https://code.visualstudio.com)를 안내합니다.
 - **Codex 로그인**: 로그인 창은 열어 드리고, 로그인은 직접 해야 합니다.
-- **Claude 다시 시작**: 연결은 Claude를 다시 시작해야 적용됩니다.
+- **터미널 설치(B·C·설치 파일) 뒤 이미 열려 있는 Claude**: `/reload-plugins`를 입력하면 연결됩니다. 새로 연 Claude는 바로 연결됩니다.
 
 ## 명령어
 
@@ -142,9 +143,9 @@ Claude 작업 워커는 메인 계정을 같이 쓰므로 사용량도 같이 �
 
 ## 지우기
 
-1. `/plugin`에서 `orchestra` 제거
+1. `/plugin`에서 `orchestra` 제거 (연결도 같이 없어집니다)
 2. 규칙 파일(`~/.claude/CLAUDE.md` 또는 프로젝트 `CLAUDE.md`)에서 `orchestra:rules` 구간 삭제
-3. 연결 삭제: `claude mcp remove -s user cco-dispatch` (프로젝트마다 설정했다면 `-s project`)
+3. (0.3.0 이하에서 설치했다면) 예전 연결 삭제: `claude mcp remove -s user cco-dispatch`
 4. (추가했다면) Codex 워커: VS Code 오케스트라 화면에서 워커 삭제
 5. (추가했다면) PATH: Windows 설정 → 환경 변수에서 Codex `...\vendor\...\bin` 폴더 삭제. 추가 전 값은 기록 파일에 남아 있습니다.
 6. 기록·백업 폴더 삭제: `~/.claude/orchestra`
