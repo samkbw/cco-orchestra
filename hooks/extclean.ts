@@ -1,50 +1,43 @@
 // 확장 프로그램이 프로젝트 CLAUDE.md에 넣은 규칙 자동 정리 (전역 사용자만).
-// 판단은 언어가 아니라 확장이 붙이는 표시(claude-code-orchestrator:policy:start~end) 구간으로 한다. 그 구간만 지우고 나머지는 그대로.
-// 프로젝트마다 설정한 사람, [그대로 두기]를 누른 프로젝트는 건드리지 않는다. 지울 때는 CLI(clean-ext)가 백업·기록한다.
+// 판단(전역 사용자인지, 전역 규칙이 있는지, [그대로 두기], 프로젝트 루트)은 모두 CLI(auto-clean-ext)가 한다.
+// 여기서는 언제 부를지만 정한다: CLI가 알려 준 파일의 수정 시각이 바뀌었을 때만 다시 부른다.
 import type { EngineInterface } from 'claude-code'
 
 import type { CoreResult } from './core'
 
-const EXT_START = '<!-- claude-code-orchestrator:policy:start -->'
-const EXT_END = '<!-- claude-code-orchestrator:policy:end -->'
+// CLI가 확정적으로 답한 파일과 그때의 수정 시각 (실패하면 비워서 다음에 다시 부른다)
+let watched: { file: string; mtimeMs: number } | null = null
+// 동시에 여러 번 부르지 않도록 진행 중인 확인을 같이 쓴다 (세션 시작 확인이 이것을 기다린다)
+let running: Promise<void> | null = null
 
-// 같은 파일을 매번 읽지 않도록 마지막으로 본 수정 시각
-let lastSeen = ''
-
-function homeOf($: EngineInterface) {
-  return $.plugin.root.replace(/\\/g, '/').split('/.claude/')[0]
+async function isUnchanged($: EngineInterface) {
+  if (!watched) return false
+  const stat = await $.fs.stat(watched.file).catch(() => null)
+  return (stat?.mtimeMs ?? 0) === watched.mtimeMs
 }
 
-// lib/sys.mjs의 normDir과 같게: 슬래시, 드라이브 소문자, 끝 슬래시 없음
-const normDir = (dir: string) => dir.replace(/\\/g, '/').replace(/^([A-Z]):/, (_m, d: string) => `${d.toLowerCase()}:`).replace(/\/+$/, '')
-
-async function readJson($: EngineInterface, file: string): Promise<any> {
-  try {
-    return (await $.fs.exists(file)) ? JSON.parse(await $.fs.read(file)) : null
-  } catch {
-    return null
-  }
-}
-
-export async function autoCleanExt($: EngineInterface, root: string, run: (args: string[]) => Promise<CoreResult>) {
-  const file = `${root}/CLAUDE.md`
-  const stat = await $.fs.stat(file).catch(() => null)
-  if (!stat) return
-  const seen = `${file}:${stat.mtimeMs}:${stat.size}`
-  if (seen === lastSeen) return
-  lastSeen = seen
-  const text = await $.fs.read(file)
-  const s = text.indexOf(EXT_START)
-  if (s < 0 || text.indexOf(EXT_END, s) < 0) return
-  const state = await readJson($, `${homeOf($)}/.claude/orchestra/state.json`)
-  if (state?.mode !== 'global' || !state?.records?.global) return
-  if (state?.keepExt?.[normDir(root)]) return
-  const r = await run(['clean-ext'])
+async function check($: EngineInterface, run: (args: string[]) => Promise<CoreResult>) {
+  if (await isUnchanged($)) return
+  const r = await run(['auto-clean-ext'])
   if (!r.ok) {
+    watched = null
     $.ui.log(`orchestra: 확장 규칙 자동 정리 실패: ${r.error}`, { to: 'debug' })
     return
   }
-  if (r.changed) {
+  watched = { file: String(r.file), mtimeMs: Number(r.mtimeMs ?? 0) }
+  if (r.action === 'cleaned') {
     $.ui.toast('🎼 확장 프로그램이 이 프로젝트 CLAUDE.md에 넣은 오케스트라 규칙을 지웠습니다 (전역 규칙과 중복). 백업: ~/.claude/orchestra/backup')
   }
+}
+
+// 적용 범위를 바꾼 뒤에는 파일이 그대로여도 다시 판단해야 하므로 기억을 지운다.
+export function forgetExtCheck() {
+  watched = null
+}
+
+export function autoCleanExt($: EngineInterface, run: (args: string[]) => Promise<CoreResult>): Promise<void> {
+  running ??= check($, run).finally(() => {
+    running = null
+  })
+  return running
 }

@@ -2,7 +2,7 @@
 // 오케스트라 터미널 명령. Claude 패널도 이 명령을 --json으로 불러 같은 동작을 한다.
 import readline from 'node:readline/promises'
 
-import { apply, assertScope, cleanExt, keepExt, mergeDone, sync, tune } from '../lib/apply.mjs'
+import { apply, assertScope, autoCleanExt, cleanExt, isGlobalUser, keepExt, mergeDone, sync, tune } from '../lib/apply.mjs'
 import { check } from '../lib/check.mjs'
 import { DEPENDS_ON, freshPlan, plan, runStep } from '../lib/install.mjs'
 import { registerPlugin } from '../lib/plugin.mjs'
@@ -246,6 +246,18 @@ async function main() {
       return out(tune(arg), arg === 'start' ? '규칙 맞추기를 시작으로 기록했습니다.' : '다음에 다시 묻습니다.')
     case 'merge-done':
       return out({ changed: mergeDone(cwd) }, '기록했습니다.')
+    case 'auto-clean-ext':
+      return out(autoCleanExt(cwd))
+    case 'is-global': {
+      // 기록이 없거나 깨졌으면 전역 사용자가 아닌 것으로 본다 (연결을 막지 않는 쪽).
+      let isGlobal = false
+      try {
+        isGlobal = isGlobalUser()
+      } catch {
+        isGlobal = false
+      }
+      return out({ isGlobal })
+    }
     case 'clean-ext':
       return out(cleanExt(cwd), '정리했습니다.')
     case 'keep-ext':

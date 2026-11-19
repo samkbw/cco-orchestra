@@ -5,7 +5,7 @@ import type { OrchestraView, StepRow } from '../types'
 import { STEP_TIMEOUT_MS, core, installNode } from './core'
 import type { CoreResult } from './core'
 import { renderPane } from './view'
-import { autoCleanExt } from './extclean'
+import { autoCleanExt, forgetExtCheck } from './extclean'
 import { guardConnect } from './mcpguard'
 import { EXT_DETAIL, EXT_NOTICE, TUNE_TEXT, tunePrompt } from './tune'
 import { isDispatch, renderDispatchRow, renderWorkerBoard, renderWorkerSection, rewriteSpinner, startWorkerBoard } from './workers'
@@ -40,7 +40,7 @@ const DONE = [
   '',
 ]
 
-// 프로젝트 폴더 (하위 폴더에서 시작해도 프로젝트 루트). 매번 엔진에서 읽는다.
+// 세션 폴더. CLI가 이 폴더에서 git 최상위(프로젝트 루트)를 다시 구한다. 매번 엔진에서 읽는다.
 async function projectDir($: EngineInterface): Promise<string> {
   return (await $.session.root()).replace(/\\/g, '/').replace(/\/+$/, '')
 }
@@ -145,6 +145,9 @@ async function runInstall($: EngineInterface, skipCodex: boolean) {
 async function apply($: EngineInterface, scope: 'global' | 'project') {
   const r = await run($, ['apply', scope], STEP_TIMEOUT_MS)
   if (!r.ok) return showError($, r)
+  // 범위가 바뀌었으니 확장 규칙 정리 여부를 다시 판단한다.
+  forgetExtCheck()
+  void autoCleanExt($, args => run($, args)).catch(err => $.ui.log(`orchestra: 확장 규칙 확인 실패: ${String(err)}`, { to: 'debug' }))
   // 연결은 플러그인이 띄운다: 다시 시작 없이 지금 세션에 바로 붙인다.
   const linked = await $.mcp.connect('cco-dispatch').catch(err => ({ isConnected: false, message: String(err) }))
   $.ui.log(`orchestra: 연결 ${linked.isConnected ? '됨' : `안 됨 (${(linked as { message?: string }).message ?? ''})`}`, { to: 'debug' })
@@ -291,7 +294,7 @@ async function command($: EngineInterface, args: string) {
 }
 
 async function cleanThenBoot($: EngineInterface) {
-  await autoCleanExt($, await projectDir($), args => run($, args)).catch(err => $.ui.log(`orchestra: 확장 규칙 확인 실패: ${String(err)}`, { to: 'debug' }))
+  await autoCleanExt($, args => run($, args)).catch(err => $.ui.log(`orchestra: 확장 규칙 확인 실패: ${String(err)}`, { to: 'debug' }))
   await boot($, true)
 }
 
@@ -308,16 +311,14 @@ export const register: Register = on => {
   // 겹치는 연결 막기: 전역 사용자일 때 플러그인 연결이 아닌 cco-dispatch는 붙지 않게 한다.
   on('mcp.connect', async ($, e, next) => {
     // 판단이 실패하면 막지 않고 그대로 연결한다.
-    const held = await guardConnect($, e.server).catch(() => null)
+    const held = await guardConnect($, e.server, args => run($, args)).catch(() => null)
     return held ? { value: held } : next(e)
   })
 
   // 대화 중에 확장이 규칙을 넣을 수 있으므로 메시지를 보낼 때도 확인한다 (파일이 바뀌었을 때만 읽음, 기다리지 않음).
   on('prompt.submit', async ($, e, next) => {
     // 확인이 실패해도 메시지는 그대로 보낸다 (기다리지도 않는다).
-    void projectDir($)
-      .then(root => autoCleanExt($, root, args => run($, args)))
-      .catch(err => $.ui.log(`orchestra: 확장 규칙 확인 실패: ${String(err)}`, { to: 'debug' }))
+    void autoCleanExt($, args => run($, args)).catch(err => $.ui.log(`orchestra: 확장 규칙 확인 실패: ${String(err)}`, { to: 'debug' }))
     return next(e)
   })
 
