@@ -7,6 +7,7 @@ import { check } from '../lib/check.mjs'
 import { DEPENDS_ON, freshPlan, plan, runStep } from '../lib/install.mjs'
 import { registerPlugin } from '../lib/plugin.mjs'
 import { notices, summarize } from '../lib/status.mjs'
+import { isInsideVsCode, isVsCodeRunning, restartVsCode } from '../lib/restart.mjs'
 import { withSpinner } from '../lib/spinner.mjs'
 import { backupDir, log, logFile } from '../lib/sys.mjs'
 
@@ -143,16 +144,42 @@ async function install(opts) {
     console.log(`규칙 위치: ${done.target}`)
     done.cleaned.forEach(line => console.log(`정리함: ${line}`))
     done.notes.forEach(line => console.log(`⚠ ${line}`))
-    // 연결은 오케스트라 플러그인이 띄운다. 이미 켜 둔 Claude는 /reload-plugins 또는 다시 시작하면 붙는다.
-    console.log(opts.noPlugin
-      ? '⚠ 연결은 오케스트라 플러그인이 합니다. Claude 입력창에서 /plugin install orchestra --marketplace samkbw/cco-orchestra 로 설치해 주세요.'
-      : '⚠ 열려 있는 Claude에는 /reload-plugins 를 입력하면 연결됩니다 (새로 연 Claude는 바로 연결).')
+    if (opts.noPlugin) {
+      console.log('⚠ 연결은 오케스트라 플러그인이 합니다. Claude 입력창에서 /plugin install orchestra --marketplace samkbw/cco-orchestra 로 설치해 주세요.')
+      return 0
+    }
     console.log('\n👉 마지막 단계: Claude를 열면 "규칙 맞추기" 화면이 뜹니다. [지금 규칙 맞추기]를 눌러 내 방식에 맞게 규칙을 정해 주세요.')
+    await offerRestart(rl)
     return 0
   } finally {
     rl?.close()
   }
 }
+
+// 열려 있는 VS Code는 다시 시작해야 새 플러그인·연결을 읽는다. 한 번 묻고 다시 시작한다.
+async function offerRestart(rl) {
+  if (!(await withSpinner('열려 있는 VS Code를 확인하는 중', () => isVsCodeRunning()))) {
+    console.log('\n✔ VS Code를 열면 바로 연결됩니다.')
+    return
+  }
+  if (isInsideVsCode()) {
+    console.log('\n⚠ 이 설치는 VS Code 안에서 실행 중이라 직접 다시 시작할 수 없습니다. VS Code를 껐다 켜 주세요.')
+    return
+  }
+  console.log('\n열려 있는 VS Code를 다시 시작해야 오케스트라가 연결됩니다.')
+  console.log('  · 저장하지 않은 파일과 열려 있던 창은 VS Code가 그대로 다시 열어 줍니다.')
+  console.log('  · 진행 중인 Claude 대화는 끊깁니다. 다시 열면 대화 기록에서 이어서 할 수 있습니다.')
+  const answer = rl ? await ask(rl, '지금 다시 시작할까요? (Y/n) ') : 'n'
+  if (/^n(o)?$|^아니/i.test(answer)) {
+    console.log('다시 시작하지 않았습니다. 나중에 VS Code를 껐다 켜면 연결됩니다.')
+    return
+  }
+  const result = await withSpinner('VS Code를 다시 시작하는 중', () => restartVsCode())
+  console.log(result === 'restarted'
+    ? '✔ VS Code를 다시 열었습니다. Claude를 열면 오케스트라가 연결되어 있습니다.'
+    : '⚠ VS Code가 닫히지 않았습니다 (저장 여부를 묻는 창이 떠 있을 수 있음). VS Code를 직접 껐다 켜 주세요.')
+}
+
 
 async function main() {
   const opts = parse(process.argv.slice(2))

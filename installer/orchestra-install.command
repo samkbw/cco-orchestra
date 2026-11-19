@@ -21,8 +21,9 @@ if ! command -v node >/dev/null 2>&1; then
 fi
 
 # 2) 패키지를 내려받아 설치 화면 실행 (git 없이 GitHub에서 바로 받음)
-echo "  설치 프로그램을 받는 중입니다. 잠시 기다려 주세요... (처음엔 30초쯤 걸릴 수 있음)"
+# 주소 뒤에 매번 다른 값을 붙인다: 같은 주소면 npx가 예전에 받아 둔 코드를 다시 쓰기 때문
+echo "  설치 프로그램을 받는 중입니다. 잠시 기다려 주세요... (30초쯤 걸릴 수 있음)"
 echo
-npx -y https://github.com/samkbw/cco-orchestra/archive/refs/heads/main.tar.gz install "$@"
+npx -y "https://github.com/samkbw/cco-orchestra/archive/refs/heads/main.tar.gz?v=$(date +%s)" install "$@"
 echo
 read -r -p "  엔터를 누르면 닫습니다. " _
