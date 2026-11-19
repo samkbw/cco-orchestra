@@ -10,6 +10,7 @@ import { notices, summarize } from '../lib/status.mjs'
 import { isInsideVsCode, isVsCodeRunning, restartVsCode } from '../lib/restart.mjs'
 import { withSpinner } from '../lib/spinner.mjs'
 import { backupDir, log, logFile } from '../lib/sys.mjs'
+import { claudeUsage } from '../lib/usage.mjs'
 
 // 사람이 직접 로그인하는 단계: 움직이는 표시 대신 안내
 const LOGIN_STEPS = new Set(['claudeLogin', 'codexLogin'])
@@ -21,6 +22,7 @@ const HELP = `오케스트라 (Claude Code Orchestrator 전용 설정)
   install            전체 설치: 확인 → 빠진 것 설치 → 범위 적용 → Claude 플러그인 등록
   check              확인만 (아무것도 바꾸지 않음)
   status             상태와 알림 보기
+  usage              Claude 사용량 확인
   apply <global|project>   범위 적용 (global: 모든 프로젝트, project: 이 프로젝트)
   sync               확장 프로그램 업데이트 뒤 기본 규칙 갱신
   merge-done         고친 규칙을 새 기본 규칙과 직접 합친 뒤 실행
@@ -227,6 +229,13 @@ async function main() {
         console.log(steps.length ? `\n빠진 것: ${steps.map(s => s.title).join(', ')}` : '\n빠진 것 없음')
       }
       return out({ check: c, steps, rows: summarize({ ...c, mcp: null }) })
+    }
+    case 'usage': {
+      const usage = await claudeUsage()
+      const percent = value => value === null ? '-' : `${value}%`
+      return out(usage, usage.ok
+        ? `Claude 사용량: 5시간 ${percent(usage.fiveHour)} · 주간 ${percent(usage.sevenDay)}`
+        : `Claude 사용량 확인 실패: ${usage.error}`)
     }
     case 'status': {
       const c = check({ cwd })

@@ -45,7 +45,7 @@ Node.js → VS Code → Claude Code(VS Code 확장 + claude 명령 + 로그인)
 | VS Code 확장 | 그대로 (업데이트하지 않음) | 설치 |
 | Codex CLI | 그대로 | 설치 |
 | PATH | 내 값·순서 그대로 | 빠진 폴더 1개만 끝에 추가 |
-| Claude 작업 워커 | 내 워커·설정 그대로 | 메인 계정을 같이 쓰는 워커 1개 추가 (우선 워커) |
+| Claude 작업 워커 | 내 워커·설정 그대로 | 메인 계정을 같이 쓰는 워커 1개 추가 |
 | Codex 워커 | 내 워커·설정 그대로 | 워커 1개 추가 |
 | 연결 (`cco-dispatch`) | 직접 등록한 것은 그대로 두고 알림 | 오케스트라 플러그인이 연결 (따로 등록하지 않음) |
 | `CLAUDE.md` | 패키지 구간 밖은 손대지 않음 | 구간 추가 |
@@ -142,6 +142,7 @@ Claude 작업 워커는 메인 계정을 같이 쓰므로 사용량도 같이 �
 | Claude 입력창 | 터미널 | 하는 일 |
 |---|---|---|
 | `/orch` | `orch status` | 상태와 알림 보기 |
+| | `orch usage` | Claude 사용량 확인 |
 | `/orch install` | `orch install` | 설치 화면 (터미널은 질문으로 진행) |
 | | `orch check` | 확인만 (아무것도 바꾸지 않음) |
 | `/orch apply global` | `orch apply global` | 모든 프로젝트에 적용 |
