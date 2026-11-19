@@ -5,7 +5,7 @@ import type { OrchestraView, StepRow } from '../types'
 import { STEP_TIMEOUT_MS, core, installNode } from './core'
 import type { CoreResult } from './core'
 import { renderPane } from './view'
-import { EXT_NOTICE, TUNE_TEXT, tunePrompt } from './tune'
+import { EXT_DETAIL, EXT_NOTICE, TUNE_TEXT, tunePrompt } from './tune'
 import { isDispatch, renderDispatchRow, renderWorkerBoard, renderWorkerSection, rewriteSpinner, startWorkerBoard } from './workers'
 
 const PANE = 'orchestra'
@@ -34,7 +34,7 @@ const DONE = [
   '',
   '고친 규칙은 확장 프로그램을 업데이트해도 바뀌지 않습니다.',
   '',
-  ...EXT_NOTICE,
+  ...EXT_DETAIL,
   '',
 ]
 
@@ -156,16 +156,16 @@ async function apply($: EngineInterface, scope: 'global' | 'project') {
   ]
   // 마지막 단계: 규칙 맞추기 (이미 끝낸 사람은 바로 완료)
   if (status.ok && isTuneWaiting(status)) return showTune($, r.target, result)
-  await show($, { stage: 'done', rows: [], notices: status.ok ? status.notices : [], message: result, actions: status.ok ? status.actions : [] })
+  await show($, { stage: 'done', rows: [], notices: [...EXT_NOTICE, ...(status.ok ? status.notices : [])], message: result, actions: status.ok ? status.actions : [] })
 }
 
 const isTuneWaiting = (r: CoreResult) => r.check?.state?.record && (r.check.state.tune === 'pending' || r.check.state.tune === 'later')
 
 async function showTune($: EngineInterface, target: string, before: string[]) {
   await update($, tuneTarget, () => target)
-  // 터미널로 설치한 사람은 완료 안내(before)를 못 봤으므로 확장 알림 안내를 같이 보여 준다.
-  const message = before.length ? [...before, '', '────────', ...TUNE_TEXT] : [...TUNE_TEXT, '', ...EXT_NOTICE]
-  await show($, { stage: 'tune', rows: [], notices: [], message, actions: ['tuneStart', 'tuneLater'] })
+  // 중복 등록 안내는 맨 위 노란 알림으로 (가장 잘 보이게). 터미널로 설치한 사람은 세부 설정 안내도 못 봤으므로 같이.
+  const message = before.length ? [...before, '', '────────', ...TUNE_TEXT] : [...TUNE_TEXT, '', ...EXT_DETAIL]
+  await show($, { stage: 'tune', rows: [], notices: EXT_NOTICE, message, actions: ['tuneStart', 'tuneLater'] })
 }
 
 // 버튼: 기록 → Claude에게 질문 시작을 맡긴다.

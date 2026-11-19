@@ -14,6 +14,11 @@
 | **Windows** | [**orchestra-install.cmd 받기**](https://github.com/samkbw/cco-orchestra/releases/latest/download/orchestra-install.cmd) | 받은 파일을 더블클릭 |
 | **macOS** | [**orchestra-install.command 받기**](https://github.com/samkbw/cco-orchestra/releases/latest/download/orchestra-install.command) | 받은 파일을 더블클릭 |
 
+> [!IMPORTANT]
+> **VS Code에 "…MCP server is not registered in this workspace. Register it…?" 알림이 뜨면 반드시 [Not in this workspace]를 누르세요.**
+> [Register]를 누르면 연결이 두 번 겹치고 프로젝트에 `.mcp.json`(과 원하면 영어 규칙)이 생깁니다. 오케스트라가 이미 모든 프로젝트에 연결해 두었습니다.
+> 확장 프로그램은 프로젝트 폴더의 `.mcp.json`만 보고 판단해서, 새 프로젝트를 처음 열 때마다 한 번씩 묻습니다.
+
 설치 파일이 순서대로 다 해 줍니다. 있는 것은 건드리지 않고 없는 것만 설치합니다.
 
 ```
@@ -27,10 +32,9 @@ Node.js → VS Code → Claude Code(VS Code 확장 + claude 명령 + 로그인)
 - macOS "확인되지 않은 개발자": 파일을 오른쪽 클릭 → [열기] → [열기]
   (그래도 안 열리면 터미널에서 `chmod +x ~/Downloads/orchestra-install.command` 후 다시 더블클릭)
 
-**VS Code에 "dispatch MCP server is not registered in this workspace. Register it…?" 알림이 뜨면 [Not in this workspace]를 누르세요.**
-확장 프로그램은 프로젝트 폴더의 `.mcp.json`만 보고 연결 여부를 판단해서, 오케스트라가 모든 프로젝트에 연결해 두었어도 새 프로젝트마다 한 번씩 묻습니다. [Register]를 누르면 그 프로젝트에 `.mcp.json`(과 원하면 영어 규칙)이 생기고 연결이 두 번 겹칩니다.
+로그인 창(Claude, Codex)은 직접 로그인해 주세요. 끝나면 열려 있는 VS Code를 다시 시작할지 한 번 묻고, 다시 시작한 뒤 Claude까지 열어 줍니다.
 
-로그인 창(Claude, Codex)은 직접 로그인해 주세요. 끝나면 Claude Code를 다시 시작하면 됩니다.
+워커 계정 추가·기본 모델·동시에 돌릴 개수·시간 제한 같은 **세부 설정은 VS Code 왼쪽의 Claude Code Orchestrator 화면(설정)에서** 내 환경에 맞게 조정해 주세요.
 
 ## 원칙: 이미 있는 것은 건드리지 않습니다
 

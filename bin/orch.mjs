@@ -52,11 +52,22 @@ const DONE = [
   '',
   '고친 규칙은 확장 프로그램을 업데이트해도 바뀌지 않습니다.',
   '',
-  // hooks/tune.ts의 EXT_NOTICE와 같게 유지
-  '⚠ VS Code에 "…dispatch MCP server is not registered in this workspace. Register it…?" 알림이 뜨면',
-  '   [Not in this workspace]를 누르세요. 오케스트라가 이미 모든 프로젝트에 연결해 두었습니다.',
-  '   [Register]를 누르면 그 프로젝트에 파일이 생기고 연결이 두 번 겹칩니다. (새 프로젝트마다 한 번씩 뜹니다)',
+  // hooks/tune.ts의 EXT_DETAIL과 같게 유지
+  '워커 계정 추가·기본 모델·동시에 돌릴 개수·시간 제한 같은 세부 설정은',
+  'VS Code 왼쪽의 Claude Code Orchestrator 화면(톱니바퀴: 설정)에서 내 환경에 맞게 조정해 주세요.',
 ]
+
+// 가장 중요한 안내: 확장 프로그램의 프로젝트별 등록 알림 (hooks/tune.ts의 EXT_NOTICE와 같게 유지)
+const EXT_NOTICE_BOX = `
+  ╔══════════════════════════════════════════════════════════════════════╗
+    ⚠ 중요 · 꼭 읽어 주세요
+    VS Code에 "…MCP server is not registered in this workspace.
+    Register it…?" 알림이 뜨면 반드시 [Not in this workspace]를 누르세요.
+
+    [Register]를 누르면 연결이 두 번 겹치고 프로젝트에 파일이 생깁니다.
+    오케스트라가 이미 모든 프로젝트에 연결해 두었습니다.
+    (새 프로젝트를 처음 열 때마다 한 번씩 뜹니다)
+  ╚══════════════════════════════════════════════════════════════════════╝`
 
 const CHOOSE = `🎼 오케스트라를 어디에 적용할까요?
 
@@ -151,10 +162,13 @@ async function install(opts) {
     done.notes.forEach(line => console.log(`⚠ ${line}`))
     if (opts.noPlugin) {
       console.log('⚠ 연결은 오케스트라 플러그인이 합니다. Claude 입력창에서 /plugin install orchestra --marketplace samkbw/cco-orchestra 로 설치해 주세요.')
+      console.log(EXT_NOTICE_BOX)
       return 0
     }
     console.log('\n👉 마지막 단계: Claude를 열면 "규칙 맞추기" 화면이 뜹니다. [지금 규칙 맞추기]를 눌러 내 방식에 맞게 규칙을 정해 주세요.')
     await offerRestart(rl)
+    // 창을 닫기 전 마지막으로 보이는 곳에 둔다.
+    console.log(EXT_NOTICE_BOX)
     return 0
   } finally {
     rl?.close()

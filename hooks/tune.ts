@@ -1,10 +1,16 @@
 // 규칙 맞추기: 설치 마지막 단계. 버튼을 누르면 Claude가 대화로 하나씩 물어보고, 답한 대로 오케스트라 규칙 구간을 고친다.
 
 // 확장 프로그램이 프로젝트마다 띄우는 등록 알림 안내 (확장은 프로젝트 .mcp.json만 보고 판단해서, 전역 연결이 있어도 묻는다)
+// 패널 맨 위 노란 알림(notices)으로 보여 준다. 가장 중요한 안내라 화면 맨 위에 둔다.
 export const EXT_NOTICE = [
-  '⚠ VS Code에 "…dispatch MCP server is not registered in this workspace. Register it…?" 알림이 뜨면',
-  '   [Not in this workspace]를 누르세요. 오케스트라가 이미 모든 프로젝트에 연결해 두었습니다.',
-  '   [Register]를 누르면 그 프로젝트에 파일이 생기고 연결이 두 번 겹칩니다. (새 프로젝트마다 한 번씩 뜹니다)',
+  '중요 · VS Code에 "…MCP server is not registered in this workspace. Register it…?" 알림이 뜨면 반드시 [Not in this workspace]를 누르세요.',
+  '[Register]를 누르면 연결이 두 번 겹치고 프로젝트에 파일이 생깁니다. 오케스트라가 이미 모든 프로젝트에 연결해 두었습니다. (새 프로젝트마다 한 번씩 뜹니다)',
+]
+
+// 세부 조정은 확장 프로그램 화면에서
+export const EXT_DETAIL = [
+  '워커 계정 추가·기본 모델·동시에 돌릴 개수·시간 제한 같은 세부 설정은',
+  'VS Code 왼쪽의 Claude Code Orchestrator 화면(톱니바퀴: 설정)에서 내 환경에 맞게 조정해 주세요.',
 ]
 
 export const TUNE_TEXT = [
