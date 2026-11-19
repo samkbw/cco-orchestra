@@ -1,0 +1,11 @@
+{
+  "name": "cco-orchestra",
+  "version": "0.2.0",
+  "description": "Claude Code Orchestrator(VS Code 확장) 전용 설정 패키지 (비공식)",
+  "type": "module",
+  "bin": { "orch": "bin/orch.mjs" },
+  "files": ["bin", "lib", ".claude-plugin", "hooks", "types", "README.md", "LICENSE"],
+  "engines": { "node": ">=18" },
+  "scripts": { "test": "node --test test/rules.test.mjs" },
+  "license": "MIT"
+}

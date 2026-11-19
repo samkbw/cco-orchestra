@@ -1,85 +1,66 @@
 import { expect, test } from 'claude-code/testing'
 
-import { END, EXT_END, EXT_START, START, findBlock, hasExtBlock, hashText, removeBlock, removeExtBlock, toBlock, upsertBlock } from '../hooks/rules'
-
-test('규칙에 $` 같은 글자가 있어도 다시 넣을 때 파일이 깨지지 않는다', async () => {
-  const tricky = `${EXT_START}\n# P\n- no \`cd\`, pipe, \`$\`, backticks, $& and $' here\n${EXT_END}`
-  const mine = '# 내 규칙\n* A\n'
-  const once = upsertBlock(mine, toBlock(tricky, '1.0.0'))
-  const twice = upsertBlock(once, toBlock(tricky, '1.0.1'))
-  expect(twice.split('# 내 규칙').length).toBe(2)
-  expect(twice.includes("$& and $' here")).toBe(true)
-  expect(removeBlock(twice).trim()).toBe(mine.trim())
-})
-
-test('줄바꿈(CRLF/LF)만 바뀐 규칙은 고친 것으로 보지 않는다', async () => {
-  const block = toBlock(`${EXT_START}\n# P\n- a\n- b\n${EXT_END}`, '1.0.0')
-  expect(hashText(block.replace(/\n/g, '\r\n'))).toBe(hashText(block))
-  expect(hashText(block.replace('- a', '- a 고침'))).not.toBe(hashText(block))
-})
-
-const BASE = `${EXT_START}\n\n# Dispatch policy\n\n## Session start protocol\n- a\n\n## Precedence\n\n- override\n\n## Division of labor\n- b\n${EXT_END}\n`
 const PANE = {
   plugin: 'orchestra',
   component: 'Pane',
   requestId: 'orchestra',
-  props: { title: '🎼 오케스트라', isFocused: false, bodyColumns: 80, placement: 'dock', scroll: { offset: 0, bodyRows: 40 }, view: {} },
+  props: { title: '🎼 오케스트라', isFocused: false, bodyColumns: 100, placement: 'dock', scroll: { offset: 0, bodyRows: 60 }, view: {} },
 } as const
 
-test('기본 규칙에서 우선순위 규칙과 확장 표시를 빼고 패키지 구간으로 감싼다', async () => {
-  const block = toBlock(BASE, '2.0.1')
-  expect(block.startsWith(START)).toBe(true)
-  expect(block.endsWith(END)).toBe(true)
-  expect(block.includes('Precedence')).toBe(false)
-  expect(block.includes('Division of labor')).toBe(true)
-  expect(block.includes(EXT_START)).toBe(false)
-})
+const NOT_APPLIED = {
+  ok: true,
+  check: { state: { mode: null, record: null } },
+  rows: [{ label: 'Claude Code Orchestrator 확장', value: '설치됨 (2.0.1)', isOk: true }],
+  notices: [],
+  actions: [],
+  steps: [{ id: 'codexPath', title: 'Codex를 오케스트라가 찾을 수 있게 PATH에 폴더 1개 추가', detail: 'C:/x', isOptional: true }],
+}
 
-test('구간이 있으면 바꾸고 없으면 붙이며, 사용자 규칙은 그대로 둔다', async () => {
-  const mine = '# 내 규칙\n* 짧게 답한다\n'
-  const once = upsertBlock(mine, toBlock(BASE, '2.0.1'))
-  const twice = upsertBlock(once, toBlock(BASE, '2.0.2'))
-  expect(twice.startsWith(mine.trim())).toBe(true)
-  expect(twice.split(START).length).toBe(2)
-  expect(findBlock(twice)?.includes('2.0.2')).toBe(true)
-  expect(hashText(findBlock(once)!)).not.toBe(hashText(findBlock(twice)!))
-})
+async function waitFor(ui: any, text: RegExp) {
+  for (let i = 0; i < 40; i++) {
+    const found = await ui.find({ text })
+    if (found) return found
+    await new Promise(resolve => setTimeout(resolve, 20))
+  }
+  return undefined
+}
 
-test('확장 프로그램이 넣은 프로젝트 규칙만 지운다', async () => {
-  const project = `# 프로젝트 규칙\n* A\n\n${BASE}\n# 뒤 규칙\n* B\n`
-  expect(hasExtBlock(project)).toBe(true)
-  const out = removeExtBlock(project)
-  expect(hasExtBlock(out)).toBe(false)
-  expect(out.includes('* A')).toBe(true)
-  expect(out.includes('* B')).toBe(true)
-})
-
-test('처음 실행하면 적용 범위를 고르는 안내가 뜬다', async ($, on) => {
+function engine(on: any, answer: ((args: string[]) => unknown) | null) {
   on('command.register', () => ({ value: { command: 'orch' } as never }))
   on('ui.open', () => ({ value: { isPlaced: true } }))
   on('ui.log', () => ({ value: undefined }))
-  on('store.get', () => ({ value: undefined }))
-  on('fs.exists', (_$, e) => ({ value: /extensions$|prompts\.js$|server\.js$/.test(String((e as { path?: string }).path ?? '')) }))
-  on('fs.list', () => ({ value: [{ name: 'toragonite.claude-code-orchestrator-2.0.1', kind: 'directory', size: 0, mtimeMs: 0, isLink: false }] as never }))
-  on('fs.read', () => ({ value: '' }))
-  on('fs.write', () => ({ value: undefined }))
-  on('process.run', (_$, e) => {
-    const argv = (e as { argv: string[] }).argv
-    const stdout = argv[2]?.includes('homedir')
-      ? JSON.stringify({ home: 'C:/Users/u', platform: 'win32', node: 'node' })
-      : JSON.stringify({ found: true, installed: true, fixDir: null })
-    return { value: { exitCode: 0, stdout, stderr: '' } as never }
-  })
-  on('session.start', (_$, e) => ({ cwd: e.cwd }))
+  on('ui.toast', () => ({ value: undefined }))
   on('session.root', () => ({ value: 'C:/p' }))
+  on('session.start', (_$: unknown, e: any) => ({ cwd: e.cwd }))
+  if (answer === null) return
+  on('process.run', (_$: unknown, e: any) => {
+    const argv = (e as { argv: string[] }).argv
+    return { value: { exitCode: 0, stdout: JSON.stringify(answer(argv.slice(2))), stderr: '' } as never }
+  })
+}
 
+test('처음 실행하면 설치 화면(확인)이 뜨고, 추가할 것과 버튼이 보인다', async ($, on) => {
+  engine(on, () => NOT_APPLIED)
   await $.session.start({ cwd: 'C:/p', surface: 'terminal', isInteractive: true } as never)
   const ui = await $.ui.mount({ ...PANE, surface: 'terminal' } as never)
-  let title: unknown
-  for (let i = 0; i < 20 && !title; i++) {
-    title = await ui.find({ text: /어디에 적용할까요/ })
-    if (!title) await new Promise(resolve => setTimeout(resolve, 20))
-  }
-  expect(title).toBeDefined()
+  expect(await waitFor(ui, /1\/3 확인/)).toBeDefined()
+  expect(await ui.find({ text: /PATH에 폴더 1개 추가/ })).toBeDefined()
+  expect(await ui.find({ text: /\[ 설치 \]/ })).toBeDefined()
+  expect(await ui.find({ text: /Codex 없이 설치/ })).toBeDefined()
+})
+
+test('추가할 것이 없으면 바로 적용 범위를 고른다', async ($, on) => {
+  engine(on, () => ({ ...NOT_APPLIED, steps: [] }))
+  await $.session.start({ cwd: 'C:/p', surface: 'terminal', isInteractive: true } as never)
+  const ui = await $.ui.mount({ ...PANE, surface: 'terminal' } as never)
+  expect(await waitFor(ui, /어디에 적용할까요/)).toBeDefined()
   expect(await ui.find({ text: /모든 프로젝트에 적용 \(추천\)/ })).toBeDefined()
+})
+
+test('Node.js가 없으면 Node.js 설치 안내가 뜬다', async ($, on) => {
+  engine(on, null)
+  on('process.run', () => ({ deny: 'spawn node ENOENT' }))
+  await $.session.start({ cwd: 'C:/p', surface: 'terminal', isInteractive: true } as never)
+  const ui = await $.ui.mount({ ...PANE, surface: 'terminal' } as never)
+  expect(await waitFor(ui, /Node\.js가 필요합니다/)).toBeDefined()
 })
